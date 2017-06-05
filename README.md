@@ -24,9 +24,9 @@ sequences a little easier.
 
 #### Note:
 
-	It's not important to this repository that sequences or files exist, or
-	even be valid file paths. As long as a sequence can be written as a string,
-	it can be represented in these helper classes.
+It's not important to this repository that sequences or files exist, or
+even be valid file paths. As long as a sequence can be written as a string,
+it can be represented in these helper classes.
 
 WIP repository. Check coverage of unittests before use.
 
