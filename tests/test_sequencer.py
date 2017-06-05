@@ -365,6 +365,13 @@ class SequenceConstructionTestCase(unittest.TestCase):
         self.assertEqual(sequence.get_start(), self.start)
         self.assertEqual(sequence.get_end(), self.end)
 
+    def test_0001_image_path_repr_dollar_f(self):
+        '''Create a sequence from a str like /some/image_sequence.$F4.tif.'''
+        dollar_f_repr = '/some/path/image_padded.$F4.tif'
+        sequence = self._make_sequence_range(dollar_f_repr)
+
+        self.assertEqual(sequence.get_start(), self.start)
+
     # @clear_temp_files_folders
     # def test_0001_image_path_udim_mari(self):
     #     raise NotImplementedError('Need to write this')

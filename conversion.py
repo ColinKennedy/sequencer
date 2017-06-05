@@ -21,6 +21,47 @@ import six
 FORMAT_REGEX_STR = r'\{(?:\w+)?:(\d+)d\}'
 
 
+def replace_formatted_digits(match):
+    '''str: Generate a padded format using the value found in match.'''
+    try:
+        matched_value = match.group(1)
+        if matched_value is None:
+            raise AttributeError
+    except AttributeError:
+        return '{}'
+    return '{:0' + str(int(match.group(1))) + 'd}'
+
+
+def is_dollar_f(path):
+    '''bool: If the path is a Houdini-style sequence (some.$F4.tif).'''
+    dollar_f_regex = r'\$F(\d+)?'
+    return bool(re.search(dollar_f_regex, path))
+
+
+def get_items_dollar_f(path):
+    '''list[str]: The items at some dollar path.'''
+    def replace_formatted_digits_dollar_f(match):
+        r'''str: Convert strings like $F4 and $F to \d{4} and \d.'''
+        digits = match.group(1)
+        if digits is None:
+            return r'\d'
+        return r'\d{{val}}'.format(val=digits)
+
+    root_dir, path_base = os.path.split(path)
+    dollar_f_regex = r'\$F(\d+)?'
+    path_comp = re.sub(
+        dollar_f_regex, replace_formatted_digits_dollar_f, path_base)
+
+    return [os.path.join(root_dir, item) for item in os.listdir(root_dir)
+            if path_comp.match(item)]
+
+
+def to_format_dollar_f(path):
+    '''str: Convert a Houdini-style path to a Python-format-friendly string.'''
+    dollar_f_regex = r'\$F(\d+)?'
+    return re.sub(dollar_f_regex, replace_formatted_digits, path)
+
+
 def is_glob(path):
     '''bool: If the path is a glob sequence (some.*.tif).'''
     return '*' in os.path.basename(path)
@@ -55,10 +96,6 @@ def get_items_percent(path):
 
 def to_format_percent(path):
     '''str: Convert a percent-style path to a Python-format-friendly string.'''
-    def replace_formatted_digits(match):
-        '''str: Generate a padded format using the value found in match.'''
-        return '{:0' + str(int(match.group(1))) + 'd}'
-
     return re.sub(r'%(\d+)d', replace_formatted_digits, path)
 
 
@@ -81,7 +118,7 @@ def to_format_from_pound(path):
         '''str: Generate a padded format using the value found in match.'''
         return '{:0' + str(len(match.group(0))) + 'd}'
 
-    return re.sub('#+', replace_with_formatted_digits, path)
+    return re.sub('(#+)', replace_with_formatted_digits, path)
 
 
 def to_pound_from_format(path):
@@ -155,12 +192,12 @@ def get_repr_container(sequence):
         '''bool: If the given path's syntax is like 'some.<number>.tif'.'''
         try:
             starting_index = path.index(self.start)
-        except IndexError:
+        except (IndexError, ValueError):
             return False
 
         try:
             ending_index = path.index(self.end)
-        except IndexError:
+        except (IndexError, ValueError):
             return False
 
         return starting_index < ending_index
@@ -186,6 +223,15 @@ def get_repr_container(sequence):
                 'to_format': to_format_angular,
                 'type': angular_delimiter.get_type(),
                 'padding_case': angular_delimiter.get_padding_case(),
+            },
+
+            'dollar_f':
+            {
+                'is_valid': is_dollar_f,
+                'items': get_items_dollar_f,
+                'to_format': to_format_dollar_f,
+                'type': 'dollar_f',
+                'padding_case': 'sensitive',
             },
 
             'glob':
