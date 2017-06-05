@@ -1,0 +1,1217 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+'''Tests for sequences, sequence items, and multi dimensional sequences.'''
+
+# IMPORT STANDARD LIBRARIES
+import tempfile
+import unittest
+import shutil
+import os
+
+# IMPORT LOCAL LIBRARIES
+from sequencer import (Sequence, SequenceMultiDimensional,
+                       get_sequence_objects)
+from sequencer_item import SequenceItem
+
+
+ALL_TEMP_FILES_FOLDERS = set()
+
+
+def clear_temp_files_folders(func):
+    '''Run function and delete any temp file(s)/folder(s) it created.
+
+    Args:
+        func (callable): The function to wrap and run.
+
+    '''
+    def function(*args, **kwargs):
+        '''Try to run the function and delete temp location it builds.
+
+        Args:
+            *args (list): Any positional args to pass to func.
+            *kwargs (list): Any keyword args to pass to func.
+
+        '''
+        try:
+            return func(*args, **kwargs)
+        except:
+            raise
+        finally:
+            for path in set(ALL_TEMP_FILES_FOLDERS):
+                remove_cached_path(path)
+    return function
+
+
+# TODO : Make sure to add test cases for when you add a number a UDIM
+#        (something with a max width). Make tests for a sequence and and item
+#
+class ItemMethodTestCase(unittest.TestCase):
+
+    '''Test the methods on a generic SequenceItem object.'''
+
+    def test_dimensions_1d(self):
+        '''Test that a generic file is created properly.'''
+        item = SequenceItem('/some/path/file.1001.tif')
+        self.assertEqual(item.get_dimensions(), 1)
+
+    def test_dimensions_2d(self):
+        '''Test that a file with more than one increment strategy inits.'''
+        item = SequenceItem('/some/path/file.7.asdfasdfasd.1001.tif')
+        self.assertEqual(item.get_dimensions(), 2)
+        self.assertEqual(item.get_value(), [7, 1001])
+
+    def test_promote_sequence(self):
+        '''Create a sequence from two SequenceItems.'''
+        item = SequenceItem('/something/some_file.1001.tif')
+        item = item.promote_to_sequence('/something/some_file.1002.tif')
+        self.assertTrue(isinstance(item, Sequence))
+
+    def test_promote_sequence_fails_0001(self):
+        '''Make sure that incompatible SequenceItems do not make a sequence.'''
+        item = SequenceItem('/something/some_file.1001.tif')
+        try:
+            item.promote_to_sequence('/something/some_file_a.1002.tif')
+        except ValueError:
+            pass  # This was expected
+        else:
+            self.assertTrue(False)
+
+    def test_set_value_int(self):
+        '''Set the value of SequenceItem with an int.
+
+        The int gets converted to the proper sequence-item-value.
+
+        '''
+        item = SequenceItem('/some/path/something.1001.tif')
+        item.set_value(1003)
+        self.assertEqual(item.get_value(), 1003)
+        self.assertEqual(item.path, '/some/path/something.1003.tif')
+
+    def test_set_value_2d_multi(self):
+        '''Set all (multiple) values of a SequenceItem, at once.'''
+        item = SequenceItem('/some/path/some_u4_v7.tif')
+        new_values = [6, 3]
+        item.set_value(new_values)
+        self.assertEqual(item.get_value(), new_values)
+
+    def test_set_value_2d_single(self):
+        '''Set one of the positions of a 2D SequenceItem, individually.'''
+        item = SequenceItem('/some/path/some_u4_v7.tif')
+        index = 1
+        new_value = 2
+        item.set_value(new_value, position=index)
+        self.assertEqual(item.get_value()[index], new_value)
+
+    def test_set_value_2d_int_failed(self):
+        '''Make sure that setting with the wrong values failes properly.'''
+        item = SequenceItem('/some/path/some_u4_v7.tif')
+        try:
+            item.set_value(6)
+        except ValueError:
+            pass  # This was expected
+        else:
+            self.assertTrue(False)
+
+
+class FileSequenceRepresentationTestCase(unittest.TestCase):
+
+    '''Tests where a sequence's representation type gets changed to another.'''
+
+    pass
+
+    # def test_convert_angular_to_angular(self):
+    #     pass
+
+    # def test_convert_angular_to_format(self):
+    #     pass
+
+    # def test_convert_angular_to_glob(self):
+    #     pass
+
+    # def test_convert_angular_to_percent(self):
+    #     pass
+
+    # def test_convert_angular_to_pound(self):
+    #     pass
+
+    # def test_convert_format_to_angular(self):
+    #     pass
+
+    # def test_convert_format_to_format(self):
+    #     pass
+
+    # def test_convert_format_to_glob(self):
+    #     pass
+
+    # def test_convert_format_to_percent(self):
+    #     pass
+
+    # def test_convert_format_to_pound(self):
+    #     pass
+
+    # def test_convert_glob_to_angular(self):
+    #     pass
+
+    # def test_convert_glob_to_format(self):
+    #     pass
+
+    # def test_convert_glob_to_glob(self):
+    #     pass
+
+    # def test_convert_glob_to_percent(self):
+    #     pass
+
+    # def test_convert_glob_to_pound(self):
+    #     pass
+
+    # def test_convert_percent_to_angular(self):
+    #     pass
+
+    # def test_convert_percent_to_format(self):
+    #     pass
+
+    # def test_convert_percent_to_glob(self):
+    #     pass
+
+    # def test_convert_percent_to_percent(self):
+    #     pass
+
+    # def test_convert_percent_to_pound(self):
+    #     pass
+
+    # def test_convert_pound_to_angular(self):
+    #     pass
+
+    # def test_convert_pound_to_format(self):
+    #     pass
+
+    # def test_convert_pound_to_glob(self):
+    #     pass
+
+    # def test_convert_pound_to_percent(self):
+    #     pass
+
+    # def test_convert_pound_to_pound(self):
+    #     pass
+
+
+class SequenceConstructionTestCase(unittest.TestCase):
+
+    '''Test the different ways that sequences can be created.'''
+
+    def setUp(self):
+        '''Create some generic start/end ranges and a container.'''
+        self.offset = 1001
+        self.start = 0
+        self.end = 100
+        self.sequences = []
+
+    def _make_sequence_range(self, template):
+        '''Make a sequence object from some template.
+
+        Args:
+            template (str): The sequence representation. It can be a variety of
+                            styles.
+
+        Returns:
+            <sequencer.Sequence>: The sequence for this template.
+
+        '''
+        sequence = Sequence(template, start=self.start, end=self.end)
+        self.sequences.append(sequence)
+        return sequence
+
+    # def _make_sequence_from_template(self, convert, padding=4):
+    #     image_full_path, _ = self._make_padded_image_sequence(padding=padding)
+    #     image_path_root, image_template = os.path.split(image_full_path)
+    #     sequence_repr = convert(image_template)
+    #     return Sequence(os.path.join(image_path_root, sequence_repr))
+
+    # def _make_sequence_from_template(self, start, end, template):
+    #     return Sequence(start, end, template)
+
+    # def _make_padded_image_sequence(self, padding=4):
+    #     if not padding:
+    #         template = 'image_padded.{0}.tif'
+    #     else:
+    #         template = 'image_padded.{{0:{pad}d}}.tif'.format(pad=padding)
+
+    #     temp_folder = make_and_cache_temp_folder()
+    #     images = [os.path.join(temp_folder, template.format(frame + self.offset))
+    #               for frame in range(self.sequence_start, self.sequence_end + 1)]
+    #     for image_name in images:
+    #         open(os.path.join(temp_folder, image_name), 'w').close()
+
+    #     return (os.path.join(temp_folder, template), images)
+
+#     def test_0001_make_sequence_from_files(self):
+#         # The files may or may not actually exist, on disk.
+#         image_template = '/something/some_file_name.{}.tif'
+
+#         images = [image_template.format(index + 1001) for index in range(20)]
+#         images.extend(
+#             [image_template.format(index + 1031) for index in range(0, 50, 3)])
+
+#         images = (SequenceItem(image) for image in images)
+#         image_value_pair = dict((image.get_value(), image) for image in images))
+
+#         final_sequence = Sequence()
+#         groups = grouping.ranges(values, False)
+#         for group in groups:
+#             if isinstance(group, int):
+#                 final_sequence.add_item(image_value_pair[group])
+#                 continue
+
+#             final_sequence.add_item(Sequence(group[0], group[1], group[2]))
+
+#     @clear_temp_files_folders
+#     def test_0001_image_path_padded(self):
+#         '''Create a sequence using a list of existing files.'''
+#         _, images = self._make_padded_image_sequence(padding=4)
+#         sequence = Sequence(images)
+#         self.sequences.append(sequence)
+
+#         self.assertEqual(sequence.get_start() - self.offset, self.sequence_start)
+#         self.assertEqual(sequence.get_end() - self.offset, self.sequence_end)
+
+#     @clear_temp_files_folders
+#     def test_0001_image_path_not_padded(self):
+#         '''Create a sequence of images from a glob expression.'''
+#         _, images = self._make_padded_image_sequence(padding=0)
+#         sequence = Sequence(images)
+#         self.sequences.append(sequence)
+
+#         self.assertEqual(sequence.get_start() - self.offset, self.sequence_start)
+#         self.assertEqual(sequence.get_end() - self.offset, self.sequence_end)
+
+    def test_create_empty_sequence(self):
+        '''Create a sequence that has nothing in it.'''
+        sequence = Sequence('/asdfsa/something.####.tif')
+        self.assertEqual(len(sequence), 0)
+
+    # def test_add_range_to_empty_sequence(self):
+    #     sequence = Sequence('/some/something.####.tif')
+
+    #     sequence.add_in_place('/some/something.0001.tif')
+    #     sequence.add_in_place('/some/something.0002.tif')
+    #     sequence.add_in_place('/some/something.0003.tif')
+
+    #     self.assertEqual(sequence.get_start(), 1)
+    #     self.assertEqual(sequence.get_end(), 3)
+
+    @clear_temp_files_folders
+    def test_0001_image_path_repr_angular(self):
+        '''Create a sequence from a string like /some/image.<f>.tiff.'''
+        angular_repr = '/some/path/image_padded.<fnum>.tif'
+        sequence = self._make_sequence_range(angular_repr)
+
+        self.assertEqual(sequence.get_start(), self.start)
+        self.assertEqual(sequence.get_end(), self.end)
+
+    # @clear_temp_files_folders
+    # def test_0001_image_path_repr_angular_2d(self):
+    #     angular_repr = 'some_file_u<u>_v<v>.tif'
+
+    #     sequence = Sequence(angular_repr, start=[0, 0], end=[9, 9])
+
+    #     self.assertEqual(sequence.get_start(), (0, 0))
+    #     self.assertEqual(sequence.get_end(), (9, 9))
+
+    @clear_temp_files_folders
+    def test_0001_image_path_repr_glob(self):
+        '''Create a sequence of images that have no padding.'''
+        glob_repr = '/some/path/image_padded.*.tif'
+        sequence = self._make_sequence_range(glob_repr)
+
+        self.assertEqual(sequence.get_start(), self.start)
+        self.assertEqual(sequence.get_end(), self.end)
+
+    @clear_temp_files_folders
+    def test_0001_image_path_repr_percent(self):
+        '''Create a sequence from a string like /some/image.%04d.tiff.'''
+        percent_repr = '/some/path/image_padded.%04d.tif'
+        sequence = self._make_sequence_range(percent_repr)
+
+        self.assertEqual(sequence.get_start(), self.start)
+        self.assertEqual(sequence.get_end(), self.end)
+
+    @clear_temp_files_folders
+    def test_0001_image_path_repr_pound(self):
+        '''Create a sequence from a str like /some/image_sequence.####.tif.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = self._make_sequence_range(pound_repr)
+
+        self.assertEqual(sequence.get_start(), self.start)
+        self.assertEqual(sequence.get_end(), self.end)
+
+    # @clear_temp_files_folders
+    # def test_0001_image_path_udim_mari(self):
+    #     raise NotImplementedError('Need to write this')
+    #     # some_path = '/some/path/mari.<'
+    #     pass
+
+    # @clear_temp_files_folders
+    # def test_0001_image_path_udim_zbrush(self):
+    #     raise NotImplementedError('Need to write this')
+    #     pass
+
+    # @clear_temp_files_folders
+    # def test_0001_image_path_udim_mudbox(self):
+    #     raise NotImplementedError('Need to write this')
+    #     pass
+
+    # def test_0002_check_sequences_are_the_same(self):
+    #     sequence = self.sequences[0]
+
+    #     for other_sequence in sequence[1:]:
+    #         # Check to make sure that the sequence bounds are the same
+    #         self.assertEqual(sequence.start, other_sequence.start)
+    #         self.assertEqual(sequence.end, other_sequence.end)
+
+    # def test_0003_check_sequences_are_the_same(self):
+    #     sequence = self.sequences[0]
+    #     for other_sequence in sequence[1:]:
+    #         self.assertTrue(sequence == other_sequence)
+
+
+class SequenceMethodTestCase(unittest.TestCase):
+
+    '''Test the methods on the generic Sequence object for behavior.'''
+
+    def setUp(self):
+        '''Create some generic start/end points for our tests.'''
+        self.start = 0
+        self.end = 100
+
+    def test_get_end_item(self):
+        '''Check the get_end() method on a regular sequence.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=100)
+        self.assertEqual(sequence.get_end(), 100)
+
+    def test_get_end_with_nested_sequence(self):
+        '''Check get_end() method on a sequence with a sequence inside it.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=100)
+        sequence2 = Sequence(pound_repr, start=101, end=200)
+        sequence.add_in_place(sequence2)
+        self.assertEqual(sequence.get_end(), 200)
+
+    def test_get_end_sequence_real(self):
+        '''Make sure that we can get back a sequence object from get_end().'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=100)
+        sequence2 = Sequence(pound_repr, start=101, end=200)
+        sequence.add_in_place(sequence2)
+        self.assertEqual(sequence.get_end('real'), sequence2)
+
+    def test_get_end_sequence_nested(self):
+        '''Check get_end() on a complex, nested sequence.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=100)
+        sequence2 = Sequence(pound_repr, start=101, end=200)
+        sequence3 = Sequence(pound_repr, start=201, end=250)
+        sequence2.add_in_place(sequence3)
+        sequence.add_in_place(sequence2)
+        self.assertEqual(sequence.get_end(), 250)
+
+    def test_values_overlaps_matching(self):
+        '''Two sequences whose ranges intersect at least once.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=0, end=100)
+        sequence2 = Sequence(pound_repr, start=20, end=100)
+        self.assertTrue(sequence1.values_overlap(sequence2))
+
+    def test_values_overlaps_not_matching_name(self):
+        '''Two sequences that intersect values but have mismatching names.
+
+        In this case, it makes sense to say that these sequences have
+        no overlap, since they technically aren't equal.
+
+        '''
+        sequence1 = Sequence('something.####.tif', start=0, end=100)
+        sequence2 = Sequence('something2.####.tif', start=20, end=100)
+        self.assertTrue(sequence1.values_overlap(sequence2))
+
+    def test_values_overlaps_not_matching_sequence(self):
+        '''Two sequences with matching names have no overlapping values.'''
+        sequence1 = Sequence('something.####.tif', start=0, end=100)
+        sequence2 = Sequence('something.####.tif', start=120, end=200)
+        self.assertFalse(sequence1.values_overlap(sequence2))
+
+    def test_add_sequence_item_object(self):
+        '''Add a SequenceItem to an existing Sequence.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=7)
+
+        item = SequenceItem('/some/path/image_padded.0008.tif')
+        sequence.add_in_place(item)
+        self.assertTrue(item in sequence)
+
+    # TODO : Write this test
+    # def test_add_sequence_item_object_already_exists(self):
+    #     raise NotImplementedError('Need to write this test')
+
+    def test_add_sequence_item_object_changes_start(self):
+        '''Check if a sequence updates when an added item changes its start.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=12, end=20)
+
+        item = SequenceItem('/some/path/image_padded.0010.tif')
+        sequence.add_in_place(item)
+
+        self.assertEqual(sequence.get_start(), 10)
+
+    def test_add_sequence_item_object_changes_end(self):
+        '''Check if a sequence updates when an added item changes its end.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=12, end=20)
+
+        item = SequenceItem('/some/path/image_padded.0030.tif')
+        sequence.add_in_place(item)
+
+        self.assertEqual(sequence.get_end(), 30)
+
+    def test_add_sequence_object_fails_0001_overlap(self):
+        '''Fail adding a sequence to a sequence if their items overlap.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=12, end=20)
+        sequence2 = Sequence(pound_repr, start=18, end=24)
+
+        try:
+            sequence1.add_in_place(sequence2)
+        except ValueError:
+            pass  # This was expected
+        else:
+            self.assertTrue(False)
+
+    def test_sequence_iteration(self):
+        '''Loop over a sequence and get each of its items.
+
+        The functionality should be the same for any sequence, even if the
+        sequence contains another sequence.
+
+        Note:
+            Changing a sequence's items is not recommended
+            (we do it here just for this test).
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=12, end=15)
+        sequence2 = Sequence(pound_repr, start=17, end=19)
+
+        sequence1.items.append(sequence2)
+
+        expected_items = \
+            ['/some/path/image_padded.0012.tif',
+             '/some/path/image_padded.0013.tif',
+             '/some/path/image_padded.0014.tif',
+             '/some/path/image_padded.0015.tif',
+             '/some/path/image_padded.0017.tif',
+             '/some/path/image_padded.0018.tif',
+             '/some/path/image_padded.0019.tif']
+
+        self.assertEqual([item.path for item in sequence1.as_range('flat')],
+                         expected_items)
+
+    def test_sequence_iteration_items(self):
+        '''Get the items of a sequence, directly. Not the nested items.
+
+        Note:
+            Changing a sequence's items is not recommended
+            (we do it here just for this test).
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+
+        sequence1 = Sequence(pound_repr)
+        sequence1_items = [
+            SequenceItem('/some/path/image_padded.0012.tif'),
+            SequenceItem('/some/path/image_padded.0013.tif'),
+            SequenceItem('/some/path/image_padded.0014.tif'),
+            SequenceItem('/some/path/image_padded.0015.tif')]
+        for item in sequence1_items:
+            sequence1.items.append(item)
+
+        sequence2 = Sequence(pound_repr)
+        sequence2_items = [
+            SequenceItem('/some/path/image_padded.0017.tif'),
+            SequenceItem('/some/path/image_padded.0018.tif'),
+            SequenceItem('/some/path/image_padded.0019.tif')]
+        for item in sequence2_items:
+            sequence2.items.append(item)
+
+        sequence1.items.append(sequence2)
+
+        expected_items = sequence1_items + [sequence2]
+
+        self.assertEqual(list(sequence1.as_range('real')), expected_items)
+
+    def test_sequence_iteration_add(self):
+        '''Iterate over a sequence that contains items and another sequence.
+
+        Unlike the previous test, which used items, the method add_in_place
+        is the correct way to add to the sequence.
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=12, end=15)
+        sequence2 = Sequence(pound_repr, start=17, end=19)
+
+        sequence1.add_in_place(sequence2)
+
+        expected_items = \
+            ['/some/path/image_padded.0012.tif',
+             '/some/path/image_padded.0013.tif',
+             '/some/path/image_padded.0014.tif',
+             '/some/path/image_padded.0015.tif',
+             '/some/path/image_padded.0017.tif',
+             '/some/path/image_padded.0018.tif',
+             '/some/path/image_padded.0019.tif']
+
+        self.assertEqual([item.path for item in sequence1.as_range('flat')],
+                         expected_items)
+
+    def test_sequence_iteration_flat_nested(self):
+        '''Iterate over the sequence with nested sequences, within it.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=12, end=15)
+        sequence2 = Sequence(pound_repr, start=17, end=19)
+        sequence3 = Sequence(pound_repr, start=20, end=22)
+
+        sequence2.add_in_place(sequence3)
+        sequence1.add_in_place(sequence2)
+
+        expected_items = \
+            ['/some/path/image_padded.0012.tif',
+             '/some/path/image_padded.0013.tif',
+             '/some/path/image_padded.0014.tif',
+             '/some/path/image_padded.0015.tif',
+
+             '/some/path/image_padded.0017.tif',
+             '/some/path/image_padded.0018.tif',
+             '/some/path/image_padded.0019.tif',
+
+             '/some/path/image_padded.0020.tif',
+             '/some/path/image_padded.0021.tif',
+             '/some/path/image_padded.0022.tif']
+
+        self.assertEqual([item.path for item in sequence1.as_range('flat')],
+                         expected_items)
+
+    def test_sequence_iteration_dunder_iter_items(self):
+        '''Check that the __iter__ method works properly.
+
+        In a generic Sequence, this should return the same result as
+        as_range('flat').
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=20, end=22)
+
+        expected_items = \
+            ['/some/path/image_padded.0013.tif',
+             '/some/path/image_padded.0014.tif',
+             '/some/path/image_padded.0015.tif',
+
+             '/some/path/image_padded.0017.tif',
+             '/some/path/image_padded.0018.tif',
+             '/some/path/image_padded.0019.tif']
+
+        for item in expected_items:
+            sequence1.add_in_place(SequenceItem(item))
+
+        expected_items.extend(
+            ['/some/path/image_padded.0020.tif',
+             '/some/path/image_padded.0021.tif',
+             '/some/path/image_padded.0022.tif'])
+
+        iterated_items = [item.path for item in sequence1]
+        self.assertEqual(iterated_items, expected_items)
+
+    def test_sequence_set_range_0001(self):
+        '''Practice changing the range of a sequence when adding another.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=3, end=9)
+
+        sequence1.add_in_place(sequence2)
+
+        self.assertEqual(sequence1.get_start(), 3)
+        self.assertEqual(sequence1.get_end(), 20)
+
+    def test_sequence_contains_sequence_item(self):
+        '''Check is sequence contains some SequenceItem.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=10, end=20)
+
+        item = SequenceItem('/some/path/image_padded.0030.tif')
+        sequence.add_in_place(item)
+
+        item2 = SequenceItem('/some/path/image_padded.0030.tif')
+        self.assertTrue(sequence.contains(item2))
+
+#     def test_sequence_dunder_contains_sequence(self):
+#         pound_repr = '/some/path/image_padded.####.tif'
+#         sequence = Sequence(pound_repr, start=10, end=20)
+#         sequence1 = Sequence(pound_repr, start=3, end=9)
+
+#         sequence.add_in_place(sequence1)
+
+#         sequence2 = Sequence(pound_repr, start=3, end=9)
+
+#         self.assertTrue(sequence1 in sequence)
+#         self.assertFalse(sequence2 in sequence)
+
+    def test_sequence_dunder_contains_sequence_item(self):
+        '''Test that the dunder __contains__ method, to test for equivalency.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=10, end=20)
+
+        item = SequenceItem('/some/path/image_padded.0030.tif')
+        sequence.add_in_place(item)
+        item2 = SequenceItem('/some/path/image_padded.0030.tif')
+
+        self.assertTrue(item in sequence)
+        self.assertFalse(item2 in sequence)
+
+    def test_add_sequence_object_dunder_contains(self):
+        '''Check that a sequence can be found in another sequence.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+
+        item = SequenceItem('/some/path/image_padded.0030.tif')
+        sequence1.add_in_place(item)
+
+        sequence2 = Sequence(pound_repr, start=21, end=29)
+        sequence1.add_in_place(sequence2)
+
+        self.assertTrue(sequence2 in sequence1)
+
+    def test_sequence_check_fits(self):
+        '''Test that two sequences can be combined together without overlap.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+
+        item = SequenceItem('/some/path/image_padded.0030.tif')
+        sequence1.add_in_place(item)
+
+        sequence2 = Sequence(pound_repr, start=21, end=29)
+        self.assertTrue(sequence2.fits(sequence1))
+        self.assertTrue(sequence1.fits(sequence2))
+
+    def test_add_sequence_object_after(self):
+        '''Determine which sequence comes later than the other sequence.
+
+        If the sequence's start/end is greater than the other sequence's
+        start/end, it's said to be later.
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=21, end=29)
+
+        self.assertTrue(sequence2.is_after(sequence1))
+
+    def test_add_sequence_object_after_failed(self):
+        '''Make sure that is_after fails if Sequences contain any overlap.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=19, end=29)
+
+        self.assertFalse(sequence2.is_after(sequence1))
+
+    def test_add_sequence_object_before(self):
+        '''Determine which sequence comes earlier than the other sequence.
+
+        If the sequence's start/end is greater than the other sequence's
+        start/end, it's said to be later.
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=21, end=29)
+
+        self.assertTrue(sequence1.is_before(sequence2))
+
+    def test_add_sequence_object_before_failed(self):
+        '''Make sure that is_before fails if Sequences contain any overlap.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=19, end=29)
+
+        self.assertFalse(sequence1.is_before(sequence2))
+
+    def test_sequence_has_str_path(self):
+        '''Check if a string path exists in a sequence.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=100)
+        self.assertTrue(sequence.has('/some/path/image_padded.0099.tif'))
+
+    def test_build_sequences_from_files(self):
+        '''Create a sequence from a list of files.
+
+        This list could be from a os.listdir() or some other method.
+
+        '''
+        some_file_paths = \
+            [
+                # a discontinuous sequence
+                '/some/path/file_name.1001.tif',
+                '/some/path/file_name.1002.tif',
+                '/some/path/file_name.1003.tif',
+                '/some/path/file_name.1004.tif',
+                '/some/path/file_name.1005.tif',
+
+                '/some/path/file_name.1006.tif',
+                '/some/path/file_name.1007.tif',
+                '/some/path/file_name.1008.tif',
+
+                # a continuous sequence
+                '/some/path/another_file_name.001009.tif',
+                '/some/path/another_file_name.001010.tif',
+                '/some/path/another_file_name.001011.tif',
+                '/some/path/another_file_name.001012.tif',
+
+                # another, continuous sequence with a different padding
+                '/some/path/another_file_name.1009.tif',
+                '/some/path/another_file_name.1010.tif',
+                '/some/path/another_file_name.1011.tif',
+                '/some/path/another_file_name.1012.tif',
+
+                # a sequence in different directory
+                '/some/other/path/another_file_name.1001.tif',
+                '/some/other/path/another_file_name.1002.tif',
+                '/some/other/path/another_file_name.1003.tif',
+                '/some/other/path/another_file_name.1004.tif',
+
+                # a single item (no sequence)
+                '/single/item.1001.tif',
+            ]
+
+        sequence_objects = get_sequence_objects(some_file_paths)
+        sequences = [item for item in sequence_objects
+                     if isinstance(item, Sequence)]
+        sequence_items = [item for item in sequence_objects
+                          if isinstance(item, SequenceItem)]
+
+        self.assertEqual(len(sequences), 4)
+        self.assertEqual(len(sequence_items), 1)
+
+    # def test_sequence_has_str_int_padding_sensitive_false(self):
+    #     pound_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(pound_repr, start=0, end=100)
+    #     self.assertFalse(sequence.has('99'))
+
+    # def test_sequence_has_str_int_padding_sensitive_true(self):
+    #     pound_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(pound_repr, start=0, end=100)
+    #     self.assertTrue(sequence.has('0099'))
+
+    # def test_sequence_has_int_padding_insensitive(self):
+    #     pound_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(pound_repr, start=0, end=100)
+    #     self.assertTrue(sequence.has(99))
+
+    # def test_add_sequence_item_str(self):
+    #     pass
+
+    def test_add_sequence_item_int(self):
+        '''Add an iten to a sequence using only an integer.
+
+        The int gets converted to a valid sequence item path before adding
+        it to the sequence.
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=21)
+        sequence.add_in_place(22)
+
+        self.assertTrue(
+            sequence.contains(SequenceItem('/some/path/image_padded.0022.tif')))
+
+    def test_add_sequence_item_int_fails_0001(self):
+        '''Make sure that items can be added to a sequence and retrieved.'''
+        pound_repr = '/some/path/image_padded.####.####.tif'
+        sequence = SequenceMultiDimensional(
+            pound_repr, start=[0, 0], end=[0, 10])
+        sequence.add_in_place([1, 12])
+
+        self.assertFalse(sequence.contains(22))
+        self.assertTrue(sequence.contains([0, 7]))
+        self.assertTrue(sequence.contains([1, 12]))
+
+    def test_sequence_contains_str_path(self):
+        '''Check if a path lives in a sequence, using only a string.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=10, end=22)
+
+        image_path = '/some/path/image_padded.0022.tif'
+        self.assertTrue(sequence.contains(image_path))
+
+    # def test_sequence_contains_str_number_case_sensitive(self):
+    #     pound_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(pound_repr, start=10, end=22)
+
+    #     self.assertFalse(sequence.contains('22'))
+    #     self.assertTrue(sequence.contains('0022'))
+
+    # def test_sequence_contains_str_number_case_insensitive(self):
+    #     pound_repr = '/some/path/image_padded.*.tif'
+    #     sequence = Sequence(pound_repr, start=10, end=22)
+
+    #     self.assertTrue(sequence.contains('22'))
+    #     self.assertTrue(sequence.contains('0022'))
+
+    def test_sequence_contains_int(self):
+        '''Check if an increment lives in a sequence, using just an int.
+
+        The stored increment is actually stored in the sequence as a
+        SequenceItem but the point is that our sequence object doesn't care
+        about that.
+
+        '''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=10, end=20)
+        self.assertTrue(sequence.contains(10))
+        self.assertTrue(sequence.contains(20))
+        self.assertFalse(sequence.contains(22))
+
+    # def test_add_sequence(self):
+    #     pass
+
+    def test_iterate_sequence_discontinuous(self):
+        '''Iterate over a sequence that has sparse, disconnected elements.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=35, end=37)
+        sequence3 = Sequence(pound_repr, start=40, end=42)
+
+        sequence1.add_in_place(sequence2)
+        sequence1.add_in_place(sequence3)
+
+        expected_items = \
+            [
+                # sequence 1
+                '/some/path/image_padded.0010.tif',
+                '/some/path/image_padded.0011.tif',
+                '/some/path/image_padded.0012.tif',
+                '/some/path/image_padded.0013.tif',
+                '/some/path/image_padded.0014.tif',
+                '/some/path/image_padded.0015.tif',
+                '/some/path/image_padded.0016.tif',
+                '/some/path/image_padded.0017.tif',
+                '/some/path/image_padded.0018.tif',
+                '/some/path/image_padded.0019.tif',
+                '/some/path/image_padded.0020.tif',
+
+                # sequence 2
+                '/some/path/image_padded.0035.tif',
+                '/some/path/image_padded.0036.tif',
+                '/some/path/image_padded.0037.tif',
+
+                # sequence 3
+                '/some/path/image_padded.0040.tif',
+                '/some/path/image_padded.0041.tif',
+                '/some/path/image_padded.0042.tif'
+            ]
+
+        the_created_sequence = [item.path for item in sequence1]
+        self.assertEqual(the_created_sequence, expected_items)
+
+    # # def test_set_end_from_path(self):
+    # #     pass
+
+    # def test_get_dimension_1d(self):
+    #     pass
+
+    # def test_get_dimension_2d(self):
+    #     pass
+
+    # def test_get_dimension_3d(self):
+    #     pass
+
+
+# class UdimSequnceSetRangeTestCase(unittest.TestCase):
+#     def test_mari_set_range_index(self):
+#         udim_sequence = UdimSequence('/something/another.####.tif')
+#         udim_sequence.set_start(1001)
+#         udim_sequence.set_end(1201)
+
+#         # for udim_path in udim_sequence:
+#         #     print(udim_path)
+
+#     def test_mari_set_range_index(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         udim_image.set_end(1101)
+
+#     def test_mari_set_range_invalid(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         try:
+#             udim_image.set_end(1100)
+#         except ValueError:
+#             self.assertTrue(True)
+#         else:
+#             self.assertTrue(False)
+
+#     def test_mari_set_range_index_no_convert(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         udim_image.set_end(13, convert=False)
+
+#     def test_mari_set_range_index_no_convert_invalid_0001(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         try:
+#             udim_image.set_end(-1, convert=False)
+#         except ValueError:
+#             self.assertTrue(True)
+
+#     def test_fill_missing_files(self):
+#         raise NotImplementedError('Need to write this test')
+
+#     def test_add_file(self):
+#         raise NotImplementedError('Need to write this')
+
+#     def test_add_file_incorrect_padding(self):
+#         raise NotImplementedError('Need to write this')
+
+#     def test_add_file_ignore_padding(self):
+#         raise NotImplementedError('Need to write this')
+
+    # def test_get_dimension_1d(self):
+    #     pass
+
+    # def test_get_dimension_2d(self):
+    #     pass
+
+    # def test_get_dimension_3d(self):
+    #     pass
+
+
+# class UdimSequnceSetRangeTestCase(unittest.TestCase):
+#     def test_mari_set_range_index(self):
+#         udim_sequence = UdimSequence('/something/another.####.tif')
+#         udim_sequence.set_start(1001)
+#         udim_sequence.set_end(1201)
+
+#         # for udim_path in udim_sequence:
+#         #     print(udim_path)
+
+#     def test_mari_set_range_index(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         udim_image.set_end(1101)
+
+#     def test_mari_set_range_invalid(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         try:
+#             udim_image.set_end(1100)
+#         except ValueError:
+#             self.assertTrue(True)
+#         else:
+#             self.assertTrue(False)
+
+#     def test_mari_set_range_index_no_convert(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         udim_image.set_end(13, convert=False)
+
+#     def test_mari_set_range_index_no_convert_invalid_0001(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         try:
+#             udim_image.set_end(-1, convert=False)
+#         except ValueError:
+#             self.assertTrue(True)
+#         else:
+#             self.assertTrue(False)
+
+#     def test_mari_set_range_index_no_convert_invalid_0002(self):
+#         raise NotImplementedError('Need to write this')
+#         udim_image = UdimSequence()
+#         try:
+#             udim_image.set_end(2.123, convert=False)
+#         except ValueError:
+#             self.assertTrue(True)
+#         else:
+#             self.assertTrue(False)
+
+#     def test_zbrush_set_range_index(self):
+#         raise NotImplementedError('Need to write this')
+#         pass
+
+#     def test_zbrush_set_range_invalid(self):
+#         raise NotImplementedError('Need to write this')
+#         try:
+#             pass
+#         except ValueError:
+#             self.assertTrue(True)
+#         else:
+#             self.assertTrue(False)
+
+#     def test_zbrush_set_range_index_no_convert(self):
+#         raise NotImplementedError('Need to write this')
+#         pass
+
+#     def test_zbrush_set_range_index_no_convert_invalid(self):
+#         raise NotImplementedError('Need to write this')
+#         try:
+#             pass
+#         except ValueError:
+#             self.assertTrue(True)
+#         else:
+#             self.assertTrue(False)
+
+
+# class UdimSequenceTypeManagementTestCase(unittest.TestCase):
+#     def test_convert_from_1_base_to_0(self):
+#         pass
+#         raise NotImplementedError('Need to write this')
+
+
+class SequenceMultiDimensionalTestCase(unittest.TestCase):
+
+    '''Test cases for special sequences that have more than one dimension.
+
+    Examples of these would be image tiles, or UDIMs.
+
+    '''
+
+    def test_initialization(self):
+        '''Create a multi-dimensional sequence.'''
+        pound_repr = '/some/path/image_padded_u*_v*.tif'
+        SequenceMultiDimensional(
+            pound_repr, start=[0, 0], end=[0, 3])
+
+    def test_udim_sequence_item_set_value_0001(self):
+        '''Set the first value of a multi-dimensional sequence item path.
+
+        Example:
+            If we have a SequenceItem that is a UDIM, changing the first element
+            will change the 'u' value.
+
+        '''
+        pound_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(pound_repr)
+        udim_image.set_value(4, position=0)
+
+        self.assertEqual(udim_image.path, '/some/path/image_padded_u4_v6.tif')
+
+    def test_udim_sequence_item_set_value_0002(self):
+        '''Set the second value of a multi-dimensional sequence item path.
+
+        Example:
+            If we have a SequenceItem that is a UDIM, changing the second
+            element will change the 'u' value.
+
+        '''
+        pound_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(pound_repr)
+        udim_image.set_value(4, position=1)
+
+        self.assertEqual(udim_image.path, '/some/path/image_padded_u3_v4.tif')
+
+    def test_udim_sequence_item_set_value_failed_0001(self):
+        '''Fail to set value if it can't match the dimensions on a sequence.'''
+        pound_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(pound_repr)
+        try:
+            udim_image.set_value(4)
+        except ValueError:
+            pass  # This was expected
+        else:
+            self.assertTrue(False)
+
+    def test_udim_sequence_item_set_multi_value(self):
+        '''Set every value on a multi-dimensional sequence item, at once.'''
+        pound_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(pound_repr)
+        udim_image.set_value([0, 1])
+
+        self.assertEqual(udim_image.path, '/some/path/image_padded_u0_v1.tif')
+
+    def test_iteration_flat(self):
+        '''Iterate over a UDIM sequence's elements.'''
+        pound_repr = '/some/path/image_padded_u*_v*.tif'
+        sequence = SequenceMultiDimensional(
+            pound_repr, start=[0, 8], end=[1, 1])
+
+        expected_items = \
+            [
+                '/some/path/image_padded_u0_v8.tif',
+                '/some/path/image_padded_u0_v9.tif',
+                '/some/path/image_padded_u1_v0.tif',
+
+                '/some/path/image_padded_u1_v1.tif',
+            ]
+
+        iterated_items = [item.path for item in sequence]
+        self.assertEqual(iterated_items, expected_items)
+
+# class MayaFileSequenceTestCase(unittest.TestCase):
+#     def test_image_in_project_folder(self):
+#         image_sequence = Sequence()
+#         resource = MayaAsset(image_sequence)
+#         self.assertTrue(resource.in_expected_folder())
+#         raise NotImplementedError('Need to write this')
+
+#     def test_image_not_in_project_subfolder(self):
+#         image_sequence = Sequence()
+#         resource = MayaAsset(image_sequence)
+#         self.assertFalse(resource.in_expected_folder())
+#         raise NotImplementedError('Need to write this')
+
+#     def test_image_in_incorrect_project_subfolder(self):
+#         image_sequence = Sequence()
+#         resource = MayaAsset(image_sequence)
+#         self.assertFalse(resource.in_expected_folder())
+#         raise NotImplementedError('Need to write this')
+
+#     def test_alembic_in_project_subfolder(self):
+#         some_alembic_file = '/some/path/file.abc'
+#         resource = MayaAsset(some_alembic_file, asset_type='alembic')
+#         self.assertTrue(resource.in_expected_folder())
+#         raise NotImplementedError('Need to write this')
+
+#     def test_alembic_in_incorrect_project_subfolder(self):
+#         some_alembic_file = '/some/path/file.abc'
+#         resource = MayaAsset(some_alembic_file, asset_type='alembic')
+#         self.assertFalse(resource.in_expected_folder())
+#         raise NotImplementedError('Need to write this')
+
+
+def make_and_cache_temp_folder(*args, **kwargs):
+    '''Create a temp folder and add it to the cache of temp directories.
+
+    Args:
+        *args (list): Positional arg values for tempfile.mkdtemp.
+        *kwargs (list): Keyword arg values for tempfile.mkdtemp.
+
+    '''
+    temp_folder = tempfile.mkdtemp(*args, **kwargs)
+    ALL_TEMP_FILES_FOLDERS.add(temp_folder)
+    return temp_folder
+
+
+def remove_cached_path(path):
+    '''Remove the path from disk and from the list of temp paths, if it exists.
+
+    Args:
+        path (str): The full, absolute path to a folder on disk.
+
+    '''
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+
+    if path in set(ALL_TEMP_FILES_FOLDERS):
+        ALL_TEMP_FILES_FOLDERS.remove(path)
+
+
+if __name__ == '__main__':
+    print(__doc__)
+
