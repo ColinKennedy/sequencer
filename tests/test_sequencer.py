@@ -10,9 +10,9 @@ import shutil
 import os
 
 # IMPORT LOCAL LIBRARIES
-from sequencer import (Sequence, SequenceMultiDimensional,
-                       get_sequence_objects)
-from sequencer_item import SequenceItem
+from sequencer.sequencer import (Sequence, SequenceMultiDimensional,
+                                 get_sequence_objects)
+from sequencer.sequencer_item import SequenceItem
 
 
 ALL_TEMP_FILES_FOLDERS = set()

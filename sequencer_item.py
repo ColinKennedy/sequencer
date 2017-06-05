@@ -13,8 +13,7 @@ from cached_property import cached_property
 from six.moves import range
 
 # IMPORT LOCAL LIBRARIES
-# TODO : Make relative
-from core import check
+from .core import check
 
 
 # TODO : Make __repr__ for SequenceItem, Sequence, and nested Sequence

@@ -16,15 +16,13 @@ import re
 
 # IMPORT THIRD-PARTY LIBRARIES
 from six.moves import range
-# TODO : Get a relative submodule
-from core import grouping
-from core import check
 
 # IMPORT LOCAL LIBRARIES
-# TODO : Make this relative
-import sequencer_item
-import udim_iterator
-import conversion
+from . import sequencer_item
+from . import udim_iterator
+from .core import grouping
+from . import conversion
+from .core import check
 
 
 class Range(object):

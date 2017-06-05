@@ -8,8 +8,10 @@ from __future__ import division
 
 # IMPORT THIRD-PARTY LIBRARIES
 from six.moves import range
-from core import check
 import six
+
+# IMPORT LOCAL LIBRARIES
+from .core import check
 
 
 class UdimBaseIterator(six.Iterator):
