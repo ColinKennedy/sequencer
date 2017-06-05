@@ -196,12 +196,18 @@ class SequenceItem(object):
             return digits[0]
         return list(digits)
 
-    def set_value(self, value, position=None):
-        '''Change the value of this item and its path representation.
+    def _conform_value_to_dimension_value(self, value, position):
+        '''Force the value to work with positions.
+
+        Since items can be 1D or multi-dimensioned, value and position may
+        or may not need to be iterable (It the item is 1D, it doesn't but if
+        it's 2D, it needs to be iterable).
+
+        Basically, this is a convenience method.
 
         Args:
             value (int or tuple[int]): The value(s) to change on this path.
-            position (int or tuple[int]): The index(es) which each value changes.
+            position (int or tuple[int]): The index(es) which each value change.
 
         Raises:
             ValueError:
@@ -222,11 +228,61 @@ class SequenceItem(object):
                              'index or give "{dim}" values, at once.'
                              ''.format(val=value, dim=self.get_dimensions()))
 
+        return (value, position_)
+
+    def get_padding(self, position=None):
+        '''Get the padding of some point of this item.
+
+        If this item is multi-dimensional and position is not given, every
+        padding position is returned.
+
+        Args:
+            position (int or tuple[int]): The index(es) which each value change.
+
+        Returns:
+            int or tuple[int]: The padding at each digit on this item.
+                               If the seqeuence is one dimensional, the value
+                               that returns is not iterable.
+
+        '''
+        parts = self.__split_delimiter(self.path)
+        digit_parts = [len(part) for part in parts if part.isdigit()]
+
+        if self.get_dimensions() == 1:
+            if position is None:
+                position = 0
+
+            return digit_parts[position]  # Note: early return
+
+        digit_parts, position = self._conform_value_to_dimension_value(
+            digit_parts, position)
+
+        paddings = []
+        for position_ in position:
+            paddings.append(digit_parts[position_])
+
+        return tuple(paddings)
+
+    def set_value(self, value, position=None):
+        '''Change the value of this item and its path representation.
+
+        If a value is 10 and the position is 0, the 0th digit on this item
+        will be set with the number 1. If value is 13 and position is 1 and this
+        item is 2-dimensional, the 1st digit position will be set to 13.
+
+        Args:
+            value (int or tuple[int]): The value(s) to change on this path.
+            position (int or tuple[int]): The index(es) which each value change.
+
+        '''
+        value, position = self._conform_value_to_dimension_value(
+            value, position)
+
         parts = self.__split_delimiter(self.path)
         non_digit_parts = [None if part.isdigit() else part for part in parts]
         digit_parts = [part for part in parts if part.isdigit()]
 
-        for position_, value_ in itertools.izip(position_, value):
+        for position_, value_ in itertools.izip(position, value):
             # Note: This assumes that there is padding on image
             padding = '{:0' + str(len(digit_parts[position_])) + 'd}'
             digit_parts[position_] = padding.format(value_)

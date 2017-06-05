@@ -77,6 +77,26 @@ class ItemMethodTestCase(unittest.TestCase):
         else:
             self.assertTrue(False)
 
+    def test_get_padding_implied_position(self):
+        '''Request the padding of the only digit in a sequence.'''
+        item = SequenceItem('/something/some_file.1001.tif')
+        self.assertEqual(item.get_padding(), 4)
+
+    def test_get_padding_explicit_position(self):
+        '''Request the padding of the only digit in a sequence, explicitly.'''
+        item = SequenceItem('/something/some_file.1001.tif')
+        self.assertEqual(item.get_padding(0), 4)
+
+    def test_get_padding_implicit_position_multi(self):
+        '''Get the padding of a 2D sequence item, at once.'''
+        item = SequenceItem('/something/some_file.100004.1001.tif')
+        self.assertEqual(item.get_padding(), (6, 4))
+
+    def test_get_padding_explicit_position_multi(self):
+        '''Get the padding of a 2D sequence item, at once.'''
+        item = SequenceItem('/something/some_file.100004.1001.tif')
+        self.assertEqual(item.get_padding([0, 1]), (6, 4))
+
     def test_set_value_int(self):
         '''Set the value of SequenceItem with an int.
 
@@ -749,56 +769,6 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence = Sequence(pound_repr, start=0, end=100)
         self.assertTrue(sequence.has('/some/path/image_padded.0099.tif'))
 
-    def test_build_sequences_from_files(self):
-        '''Create a sequence from a list of files.
-
-        This list could be from a os.listdir() or some other method.
-
-        '''
-        some_file_paths = \
-            [
-                # a discontinuous sequence
-                '/some/path/file_name.1001.tif',
-                '/some/path/file_name.1002.tif',
-                '/some/path/file_name.1003.tif',
-                '/some/path/file_name.1004.tif',
-                '/some/path/file_name.1005.tif',
-
-                '/some/path/file_name.1006.tif',
-                '/some/path/file_name.1007.tif',
-                '/some/path/file_name.1008.tif',
-
-                # a continuous sequence
-                '/some/path/another_file_name.001009.tif',
-                '/some/path/another_file_name.001010.tif',
-                '/some/path/another_file_name.001011.tif',
-                '/some/path/another_file_name.001012.tif',
-
-                # another, continuous sequence with a different padding
-                '/some/path/another_file_name.1009.tif',
-                '/some/path/another_file_name.1010.tif',
-                '/some/path/another_file_name.1011.tif',
-                '/some/path/another_file_name.1012.tif',
-
-                # a sequence in different directory
-                '/some/other/path/another_file_name.1001.tif',
-                '/some/other/path/another_file_name.1002.tif',
-                '/some/other/path/another_file_name.1003.tif',
-                '/some/other/path/another_file_name.1004.tif',
-
-                # a single item (no sequence)
-                '/single/item.1001.tif',
-            ]
-
-        sequence_objects = get_sequence_objects(some_file_paths)
-        sequences = [item for item in sequence_objects
-                     if isinstance(item, Sequence)]
-        sequence_items = [item for item in sequence_objects
-                          if isinstance(item, SequenceItem)]
-
-        self.assertEqual(len(sequences), 4)
-        self.assertEqual(len(sequence_items), 1)
-
     # def test_sequence_has_str_int_padding_sensitive_false(self):
     #     pound_repr = '/some/path/image_padded.####.tif'
     #     sequence = Sequence(pound_repr, start=0, end=100)
@@ -932,6 +902,71 @@ class SequenceMethodTestCase(unittest.TestCase):
     # def test_get_dimension_3d(self):
     #     pass
 
+
+class MakeSequenceTestCase(unittest.TestCase):
+    def test_build_sequences_from_files(self):
+        '''Create a sequence from a list of files.
+
+        This list could be from a os.listdir() or some other method.
+
+        '''
+        some_file_paths = \
+            [
+                # a discontinuous sequence
+                '/some/path/file_name.1001.tif',
+                '/some/path/file_name.1002.tif',
+                '/some/path/file_name.1003.tif',
+                '/some/path/file_name.1004.tif',
+
+                '/some/path/file_name.1006.tif',
+                '/some/path/file_name.1007.tif',
+                '/some/path/file_name.1008.tif',
+
+                # a continuous sequence
+                '/some/path/another_file_name.001009.tif',
+                '/some/path/another_file_name.001010.tif',
+                '/some/path/another_file_name.001011.tif',
+                '/some/path/another_file_name.001012.tif',
+
+                # another, continuous sequence with a different padding
+                '/some/path/another_file_name.1009.tif',
+                '/some/path/another_file_name.1010.tif',
+                '/some/path/another_file_name.1011.tif',
+                '/some/path/another_file_name.1012.tif',
+
+                # a sequence in different directory
+                '/some/other/path/another_file_name.1001.tif',
+                '/some/other/path/another_file_name.1002.tif',
+                '/some/other/path/another_file_name.1003.tif',
+                '/some/other/path/another_file_name.1004.tif',
+
+                # a single item (no sequence)
+                '/single/item.1001.tif',
+            ]
+
+        sequence_objects = get_sequence_objects(some_file_paths)
+        sequences = [item for item in sequence_objects
+                     if isinstance(item, Sequence)]
+        sequence_items = [item for item in sequence_objects
+                          if isinstance(item, SequenceItem)]
+
+        self.assertEqual(len(sequences), 4)
+        self.assertEqual(len(sequence_items), 1)
+
+    def test_build_sequences_from_files_adapter(self):
+        some_file_paths = \
+            [
+                # a discontinuous sequence
+                '/some/path/file_name.1001.tif',
+                '/some/path/file_name.1002.tif',
+                '/some/path/file_name.1003.tif',
+                '/some/path/file_name.1004.tif',
+            ]
+
+        sequence = Sequence(some_file_paths)
+        item_paths = [item.path for item in sequence]
+
+        self.assertEqual(some_file_paths, item_paths)
 
 # class UdimSequnceSetRangeTestCase(unittest.TestCase):
 #     def test_mari_set_range_index(self):

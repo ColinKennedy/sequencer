@@ -11,8 +11,6 @@ for a sequence is 3 consecutive items.
 # IMPORT STANDARD LIBRARIES
 import collections
 import functools
-import itertools
-import warnings
 import six
 import re
 
@@ -21,12 +19,12 @@ from six.moves import range
 # TODO : Get a relative submodule
 from core import grouping
 from core import check
-import conversion
 
 # IMPORT LOCAL LIBRARIES
 # TODO : Make this relative
 import sequencer_item
 import udim_iterator
+import conversion
 
 
 class Range(object):
@@ -87,6 +85,11 @@ class Sequence(collections.MutableSequence):
             to represent the end, NOT the start. This mimics the way that
             Python's "range()" function works.
 
+        Note:
+            If a list of files are given, it is assumed that those files are
+            meant for only 1 sequence and are all related. If they aren't,
+            the sequence won't be created correctly.
+
         Example:
             >>> sequence = Sequence('/something.####.tif', 0, 10)
             >>> sequence.start  # 0
@@ -101,7 +104,9 @@ class Sequence(collections.MutableSequence):
             >>> sequence.end  # 10
 
         Args:
-            template (str): The sequence that this object represents.
+            template (str or list[str]):
+                The sequence that this object represents.
+
                 Multiple syntaxes are supported for this object.
                 For a padding-insensitive sequence, use a glob form
                 (example: '/some/sequence.*.tif').
@@ -111,7 +116,40 @@ class Sequence(collections.MutableSequence):
                 The end of the sequence. Default: 0.
 
         '''
+        def get_format_info_pound(padding, length):
+            return ['#' * padding] * length
+
+        def get_format_info_glob(padding, length):
+            return ['*'] * length
+
         super(Sequence, self).__init__()
+
+        if not isinstance(template, six.string_types):
+            # assuming these are sequence items, we need to create a valid
+            # sequence template for these items, get its range, and create
+            # a sequence using that info
+            #
+            items = [self.get_sequence_item(item) for item in template]
+            paddings = [item.get_padding() for item in items]
+            has_consistent_padding = all([item.get_padding() for item in items])
+
+            example_item = items[0]
+
+            # Choose the a padding insensitive type or sensitive type
+            # (glob vs pound, for example)
+            #
+            if has_consistent_padding:
+                format_info_func = get_format_info_pound
+            else:
+                format_info_func = get_format_info_glob
+
+            # Create a valid template and set it + the sequence start and end
+            format_info = format_info_func(padding=example_item.get_padding(),
+                                           length=example_item.get_dimensions())
+
+            template = items[0].get_formatted_path().format(*format_info)
+            start = min(item.get_value() for item in items)
+            end = max(item.get_value() for item in items)
 
         if start > end:
             start, end = end, start
@@ -124,27 +162,10 @@ class Sequence(collections.MutableSequence):
 
         self.template = template
 
-        if not isinstance(template, six.string_types):
-            raise NotImplementedError('Template must be a string')
-            # found_paddings = set()
-            # for item in template:
-            #     found_paddings.add(get_padding(item))
-
-            # if not found_paddings:
-            #     raise ValueError('Sequence: "{seq}" has no items with padding.'
-            #                      ''.format(seq=template))
-            # elif len(found_paddings) > 1:
-            #     raise ValueError('Sequence: "{seq}" has mixed padding and '
-            #                      'cannot be added.'.format(seq=template))
-
-            # # TODO : Need to be able to auto-get the sequence_type
-            # self.padding_sensitive = len(found_paddings) == 1
-            # # self.items = template
-        else:
-            repr_sequence = conversion.get_repr_container(template)
-            self.convert_to_format = repr_sequence['to_format']
-            self.sequence_type = repr_sequence['type']
-            self.padding_sensitive = repr_sequence['padding_case'] == 'sensitive'
+        repr_sequence = conversion.get_repr_container(template)
+        self.convert_to_format = repr_sequence['to_format']
+        self.sequence_type = repr_sequence['type']
+        self.padding_sensitive = repr_sequence['padding_case'] == 'sensitive'
 
         if (not start and not end) or start == end:
             self.items = []
@@ -172,7 +193,7 @@ class Sequence(collections.MutableSequence):
         for index in range_iterator:
             index = check.force_itertype(index)
             item = self.get_sequence_item(
-                self._get_format_path().format(*index))
+                self.get_format_path().format(*index))
             items.append(item)
 
         return items
@@ -249,7 +270,7 @@ class Sequence(collections.MutableSequence):
                 The information to convert to a sequence object of some kind.
 
         Returns:
-            SequenceItem:
+            <sequencer_item.SequenceItem> or NoneType:
                 The object given to this function or a new, created instance.
 
         '''
@@ -258,9 +279,25 @@ class Sequence(collections.MutableSequence):
 
         value = check.force_itertype(value)
 
-        format_path = self._get_format_path()
+        format_path = self.get_format_path()
 
         def get_item_using_format(format_path, values):
+            '''Create a sequence item object using some format path and values.
+
+            This function uses Python's .format() function to make an item.
+
+            Args:
+                format_path (str): The Python-formatted path.
+                values (list[int]): The values to apply to the format_path.
+                                    Other functions expect values to be
+                                    sequence paths but this version assumes
+                                    that values are integer-items.
+
+            Returns:
+                <sequencer_item.SequenceItem> or NoneType:
+                    The item created from the base format_path.
+
+            '''
             format_dimensions = len(
                 re.findall(conversion.FORMAT_REGEX_STR, format_path))
 
@@ -274,30 +311,50 @@ class Sequence(collections.MutableSequence):
 
             return self.get_sequence_item(full_path)
 
-        def get_item_using_regex(format_path, value):
+        def get_item_using_path(format_path, value):
+            '''Convert a path directly into a sequence item object.
+
+            Args:
+                format_path (str): The Python string passed to this function.
+                                   Does nothing in this function.
+                value (list[str]): Full paths that represent sequence items
+                                   for this object.
+
+            Returns:
+                <sequencer_item.SequenceItem> or NoneType:
+                    The item created from the base format_path.
+
+            '''
             return self.get_sequence_item(value[0])
-            # TODO : Is this other stuff necessary?
-            format_regex = re.sub(r'({([\w:!]+)?})', r'(\d+)', format_path)
-            digits = [int(value_) for value2
-                    in re.match(format_regex, value).groups()]
-            return self.get_sequence_item(self._get_format_path().format(*digits))
 
         def get_item_from_str_value(format_path, value):
+            '''Convert string values to ints and make sequence item objects.
+
+            Args:
+                format_path (str): The Python-formatted path.
+                values (list[str]): Strings that can be converted to integers
+                                    and applied to format_path to create a
+                                    sequence item.
+
+            Returns:
+                <sequencer_item.SequenceItem> or NoneType:
+                    The item created from the base format_path.
+
+            '''
             # TODO : Add check to make sure that the string padding is OK
             value = [int(value_) for value_ in value]
             return get_item_using_format(format_path, value)
 
-
-        strategies = [get_item_using_format, get_item_using_regex, get_item_from_str_value]
+        strategies = [
+            get_item_using_format,
+            get_item_using_path,
+            get_item_from_str_value,
+            ]
 
         for strategy in strategies:
             item = strategy(format_path, value)
             if item is not None:
                 return item
-        else:
-            raise ValueError(
-                'Value: "{value}" was not parsable into a "{cls_}".'
-                ''.format(value=value, cls_=self.get_sequence_item_class()))
 
     def has(self, item):
         '''Check if an object is in this object instance.
@@ -356,7 +413,7 @@ class Sequence(collections.MutableSequence):
             bool: If the two sequences's names match.
 
         '''
-        return self._get_format_path() == sequence._get_format_path()
+        return self.get_format_path() == sequence.get_format_path()
 
     @classmethod
     def _is_left_of(cls, first, second):
@@ -464,7 +521,7 @@ class Sequence(collections.MutableSequence):
         '''
         return self.values_overlap(sequence) and self.has_matching_name(sequence)
 
-    def _get_format_path(self):
+    def get_format_path(self):
         '''str: Create a Python-style format string from this sequence.'''
         return self.convert_to_format(self.template)
 
@@ -776,7 +833,6 @@ class Sequence(collections.MutableSequence):
             bool: If the item's path was found in this object instance.
 
         '''
-
         item_in = item in self
         if item_in:
             return True
@@ -918,23 +974,6 @@ class SequenceMultiDimensional(Sequence):
         return udim_iterator.UdimIterator2D(*args, **kwargs)
 
 
-class UdimSequence(Sequence):
-    def __init__(self, sequence, auto_fill=True):
-        super(UdimSequence, self).__init__(sequence=sequence)
-        if not auto_fill:
-            # TODO : Fully support auto_fill=False
-            warnings.warn('auto_file=False not fully supported')
-
-    def set_end(self, value):
-        pass
-
-    def set_start(self, value):
-        return self._get_format_path().format(value)
-
-    def _update_range(self):
-        self.get_start_item()
-
-
 def get_sequence_objects(file_paths, sort=sorted):
     '''Create sequence objects from raw file paths.
 
@@ -1005,7 +1044,7 @@ def get_sequence_objects_split(*args, **kwargs):
     '''
     sequences = get_sequence_objects(*args, **kwargs)
     sequence_items = [item for item in sequences
-                      if isinstance(item, self.get_sequence_item_class())]
+                      if isinstance(item, Sequence.get_sequence_item_class())]
     sequences = [item for item in sequences if isinstance(item, Sequence)]
     return (sequences, sequence_items)
 
@@ -1032,7 +1071,7 @@ def make_sequence(template, *args, **kwargs):
         Sequence or SequenceMultiDimensional: The sequence object to get.
 
     '''
-    repr_sequence = get_repr_container(template)
+    repr_sequence = conversion.get_repr_container(template)
     formatted_template = repr_sequence['to_format'](template)
     number_of_dimensions = formatted_template.count('{}')
 
