@@ -568,6 +568,20 @@ class SequenceMethodTestCase(unittest.TestCase):
 
         self.assertEqual(list(sequence1.as_range('real')), expected_items)
 
+    def test_sequence_iteration_value(self):
+        '''Get the values of a sequence, in a simple function.'''
+        def get_value(item):
+            '''int: The value on some item.'''
+            return item.get_value()
+
+        pound_repr = '/some/path/image_padded.####.tif'
+        start = 10
+        end = 21
+        sequence = Sequence(pound_repr, start=start, end=end)
+
+        self.assertEqual([index for index in range(start, end + 1)],
+                         list(sequence.as_range('flat', function=get_value)))
+
     def test_sequence_iteration_add(self):
         '''Iterate over a sequence that contains items and another sequence.
 

@@ -746,7 +746,7 @@ class Sequence(collections.MutableSequence):
         elif item_value < self.get_start():
             self.start_item = item
 
-    def as_range(self, mode='real'):
+    def as_range(self, mode='real', function=None):
         '''Get back a range of this sequence.
 
         Args:
@@ -758,12 +758,22 @@ class Sequence(collections.MutableSequence):
                 'bounds': The start and end of this object. It will create and
                           returns for the full sequence, even if the real
                           sequence is missing items.
+            function (callable[<sequencer_item.SequenceItem> or Sequence]):
+                This function is run right before the sequence object is
+                yielded. So, for example, if you want specific information
+                about an item, you can add a function to get it, such as
+                operator.attrgetter or something.
 
         Yields:
-            SequenceItem or Sequence: The sequence objects stored in this object.
+            SequenceItem or Sequence or object:
+                The sequence objects stored in this object.
 
         '''
-        def as_is(item):
+        def return_as_is(item):
+            '''Give back the passed item, without modifying it.'''
+            return item
+
+        def yield_as_is(item):
             '''SequenceItem or Sequence: The item that was passed.'''
             yield item
 
@@ -800,11 +810,14 @@ class Sequence(collections.MutableSequence):
             for item in self._items_iterator(self.get_start(), self.get_end()):
                 yield item
 
+        if function is None:
+            function = return_as_is
+
         mode_functions = \
             {
                 'bounds': full_range,
                 'flat': recursive_yield,
-                'real': as_is,
+                'real': yield_as_is,
             }
 
         if mode == 'bounds':
@@ -813,7 +826,7 @@ class Sequence(collections.MutableSequence):
         else:
             for item in self.items:
                 for item_ in mode_functions[mode](item):
-                    yield item_
+                    yield function(item_)
 
     def contains(self, item):
         '''Check if the item's path is inside of this object.
