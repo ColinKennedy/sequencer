@@ -161,9 +161,10 @@ class Sequence(collections.MutableSequence):
         self.template = template
 
         repr_sequence = conversion.get_repr_container(template)
+        self.make = repr_sequence['make']
         self.convert_to_format = repr_sequence['to_format']
         self.sequence_type = repr_sequence['type']
-        self.padding_sensitive = repr_sequence['padding_case'] == 'sensitive'
+        self.is_valid_type = repr_sequence['is_valid']
 
         if (not start and not end) or start == end:
             self.items = []
@@ -590,6 +591,64 @@ class Sequence(collections.MutableSequence):
 
         '''
         self.__set_range_point(self.end_item, value)
+
+    def set_padding(self, value, position=None, force=False):
+        '''Change the padding on this sequence to some new value.
+
+        Args:
+            value (int or tuple[int]): The value(s) to change padding to.
+            position (int or tuple[int]): The padding index(es) to change.
+            force (:obj:`bool`, optional):
+                If True, the value for this padding will be set, even if it
+                may cause this object to break. If False, ValueError will be
+                raised, where needed.
+
+        Raises:
+            ValueError:
+                If force is False and and the padding is less than the max value
+                on this sequence, it means that the value would exceed padding
+                and break the sequence. An error is raised, instead.
+
+        '''
+        max_item_value = max(set(item.get_value() for item in self))
+        if not check.is_itertype(max_item_value):
+            max_padding = len(str(max_item_value))
+        else:
+            max_padding = max_item_value
+
+        if not force and value < max_padding:
+            raise ValueError(
+                'Padding value: "{padding}" is too low. Padding must be at '
+                'least "{max_}" because of item, "{item}".'
+                ''.format(padding=value, max_=max_padding, item=max_item_value))
+
+        for item in self:
+            item.set_padding(value, position)
+
+        # Now we need to change the padding on our template
+        format_path = self.get_format_path()
+
+        some_item = self.items[0]  # Doesn't matter which item we use
+
+        value, position = some_item._conform_value_iterable(
+            value, position)
+
+        # '/some/path.1001.tif' -> ['/some/path.', '1001', '.tif']
+        non_digits = some_item.get_non_digits()
+
+        # '/some/template.####.tif' -> ['/some/path.', '####', '.tif']
+        split_items = split_using_subitems(self.template, non_digits)
+
+        # ['/some/path.', '####', '.tif'] -> ['####']
+        format_items = [item for item in split_items if self.is_valid_type(item)]
+
+        # Mutate the format items with our new padding(s)
+        for position_ in position:
+            format_items[position_] = self.make(value[position_])
+
+        # Re-construct the template and assign it to our object
+        final_template = make_alternating_list(non_digits, format_items)
+        self.template = ''.join(final_template)
 
     def set_start(self, value):
         '''Change the start of this object to be some value.
@@ -1094,6 +1153,82 @@ def make_sequence(template, *args, **kwargs):
         raise ValueError(
             'Template: "{template}" does not have a supported definition. '
             'Cannot continue.'.format(template=template))
+
+
+# TODO : Move this to core
+def make_alternating_list(list1, list2):
+    '''Combine both lists, alternating each of their elements.
+
+    This method will be able to handle varying list lengths.
+
+    Args:
+        list1 (list): A list of elements to alternate. This list's 0th index
+                      will be the first index of the alternated list.
+        list2 (list): A list of elements to alternate.
+
+    Returns:
+        list: A list of alternated elements.
+
+    '''
+    # TODO : remove this import
+    import itertools
+    return [element for element in list(itertools.chain.from_iterable(
+                [val for val in itertools.izip_longest(list1, list2)]))
+            if element != None]
+
+
+def split_using_subitems(base, subitems, include_subitems=False):
+    '''Use a list of items to split some base item.
+
+    This method assumes that every split needed is covered in subitems.
+    If subitem doesn't alternate its elements properly or is missing items,
+    base will not split properly.
+
+    Todo:
+        I can't figure out how to get what I want so I made this ghetto thing
+        This should definitely be optimized.
+
+    Args:
+        base (str): The whole string to split. This object, ideally, should have
+                    substrings that subitems will identify and use to split it.
+        subitems (list[str]): The items that are known to be inside of base
+                              and will be used to split up base.
+        include_subitems (:obj:`bool`, optional):
+            If True, the subitem used to split base will be included in the
+            function's return. If False, only the split elements will be
+            returned. Default is False.
+
+    Returns:
+        list[str]: The split base string.
+
+    '''
+    if include_subitems:
+        raise NotImplementedError('Need to make include_subitems do something.')
+
+    final_split = []
+    split_items_len = len(subitems)
+    last_end = None
+    for index, item in enumerate(subitems):
+        starting_index = base.index(item)
+
+        if index == 0:
+            start = base[:starting_index]
+            if start:
+                final_split.append(start)
+
+        if last_end is not None and starting_index != last_end:
+            final_split.append(base[last_end:starting_index])
+
+        ending_index = starting_index + len(item)
+        last_end = ending_index
+        final_split.append(base[starting_index:ending_index])
+
+        if index + 1 == split_items_len:
+            ending = base[ending_index:]
+            if ending:
+                final_split.append()
+
+    return tuple(final_split)
 
 
 if __name__ == '__main__':

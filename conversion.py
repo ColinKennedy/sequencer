@@ -38,6 +38,11 @@ def is_dollar_f(path):
     return bool(re.search(dollar_f_regex, path))
 
 
+def make_dollar_f(value):
+    '''str: Create a valid dollar-f format item, using value.'''
+    return '$F{value}'.format(value=value)
+
+
 def get_items_dollar_f(path):
     '''list[str]: The items at some dollar path.'''
     def replace_formatted_digits_dollar_f(match):
@@ -67,6 +72,11 @@ def is_glob(path):
     return '*' in os.path.basename(path)
 
 
+def make_glob(value):
+    '''str: Create a valid glob format item, using value.'''
+    return '*'
+
+
 def get_items_glob(path):
     '''list[str]: The files located at this glob path (if any).'''
     return glob.glob(path)
@@ -80,6 +90,11 @@ def to_format_glob(path):
 def is_percent(path):
     r'''bool: If the path has a percent-increment style (some.%04d.tif).'''
     return re.search(r'%\d+d', os.path.basename(path))
+
+
+def make_percent(value):
+    '''str: Create a valid percent format item, using value.'''
+    return '%{value}d'.format(value=value)
 
 
 def get_items_percent(path):
@@ -102,6 +117,11 @@ def to_format_percent(path):
 def is_pound(path):
     '''bool: If the path is a pound-style syntax (somefile.####.tif).'''
     return '#' in os.path.basename(path)
+
+
+def make_pound(value):
+    '''str: Create a valid pound format item, using value.'''
+    return '#' * value
 
 
 def get_items_pound(path):
@@ -202,6 +222,10 @@ def get_repr_container(sequence):
 
         return starting_index < ending_index
 
+    def make_angular(value):
+        '''str: Create a valid angular format item, using value.'''
+        return '<fnum>'
+
     def get_items_angular(path):
         '''list[str]: The files at some path of syntax /some/path.<fnum>.tif.'''
         path = re.sub('<.+>', '*', path)
@@ -221,6 +245,7 @@ def get_repr_container(sequence):
                 'is_valid': functools.partial(is_angular, angular_delimiter),
                 'items': get_items_angular,
                 'to_format': to_format_angular,
+                'make': make_angular,
                 'type': angular_delimiter.get_type(),
                 'padding_case': angular_delimiter.get_padding_case(),
             },
@@ -229,6 +254,7 @@ def get_repr_container(sequence):
             {
                 'is_valid': is_dollar_f,
                 'items': get_items_dollar_f,
+                'make': make_dollar_f,
                 'to_format': to_format_dollar_f,
                 'type': 'dollar_f',
                 'padding_case': 'sensitive',
@@ -238,6 +264,7 @@ def get_repr_container(sequence):
             {
                 'is_valid': is_glob,
                 'items': get_items_glob,
+                'make': make_glob,
                 'to_format': to_format_glob,
                 'type': 'glob',
                 'padding_case': 'insensitive',
@@ -247,6 +274,7 @@ def get_repr_container(sequence):
             {
                 'is_valid': is_percent,
                 'items': get_items_percent,
+                'make': make_percent,
                 'to_format': to_format_percent,
                 'type': 'percent',
                 'padding_case': 'sensitive',
@@ -256,6 +284,7 @@ def get_repr_container(sequence):
             {
                 'is_valid': is_pound,
                 'items': get_items_pound,
+                'make': make_pound,
                 'to_format': to_format_from_pound,
                 'type': 'pound',
                 'padding_case': 'sensitive',

@@ -134,86 +134,169 @@ class ItemMethodTestCase(unittest.TestCase):
             self.assertTrue(False)
 
 
-class FileSequenceRepresentationTestCase(unittest.TestCase):
+# class FileSequenceRepresentationTestCase(unittest.TestCase):
 
-    '''Tests where a sequence's representation type gets changed to another.'''
+#     '''Tests where a sequence's representation type gets changed to another.'''
 
-    pass
+#     def test_convert_angular_to_angular(self):
+#         angular_repr = '/some/path/image_padded.<fnum>.tif'
+#         sequence = Sequence(angular_repr, start=10, end=20)
 
-    # def test_convert_angular_to_angular(self):
-    #     pass
+#         sequence.set_type('angular')
 
-    # def test_convert_angular_to_format(self):
-    #     pass
+#         self.assertEqual(sequence.template, angular_repr)
 
-    # def test_convert_angular_to_glob(self):
-    #     pass
+#     def test_convert_angular_to_glob(self):
+#         sequence = Sequence('/some/path/image_padded.<fnum>.tif',
+#                             start=10, end=20)
 
-    # def test_convert_angular_to_percent(self):
-    #     pass
+#         sequence.set_type('glob')
 
-    # def test_convert_angular_to_pound(self):
-    #     pass
+#         self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
 
-    # def test_convert_format_to_angular(self):
-    #     pass
+#     def test_convert_angular_to_percent(self):
+#         sequence = Sequence('/some/path/image_padded.<fnum>.tif',
+#                             start=10, end=20)
 
-    # def test_convert_format_to_format(self):
-    #     pass
+#         sequence.set_type('percent', padding=4)
 
-    # def test_convert_format_to_glob(self):
-    #     pass
+#         self.assertEqual(sequence.template, '/some/path/image_padded.%04d.tif')
 
-    # def test_convert_format_to_percent(self):
-    #     pass
+#     def test_convert_angular_to_pound(self):
+#         sequence = Sequence('/some/path/image_padded.<fnum>.tif',
+#                             start=10, end=20)
 
-    # def test_convert_format_to_pound(self):
-    #     pass
+#         sequence.set_type('pound', padding=4)
 
-    # def test_convert_glob_to_angular(self):
-    #     pass
+#         self.assertEqual(sequence.template, '/some/path/image_padded.####.tif')
 
-    # def test_convert_glob_to_format(self):
-    #     pass
+#     # def test_convert_format_to_angular(self):
+#     #     pass
 
-    # def test_convert_glob_to_glob(self):
-    #     pass
+#     # def test_convert_format_to_format(self):
+#     #     pass
 
-    # def test_convert_glob_to_percent(self):
-    #     pass
+#     # def test_convert_format_to_glob(self):
+#     #     pass
 
-    # def test_convert_glob_to_pound(self):
-    #     pass
+#     # def test_convert_format_to_percent(self):
+#     #     pass
 
-    # def test_convert_percent_to_angular(self):
-    #     pass
+#     # def test_convert_format_to_pound(self):
+#     #     pass
 
-    # def test_convert_percent_to_format(self):
-    #     pass
+#     def test_convert_glob_to_angular(self):
+#         sequence = Sequence('/some/path/image_padded.*.tif', start=10, end=20)
 
-    # def test_convert_percent_to_glob(self):
-    #     pass
+#         sequence.set_type('angular')
 
-    # def test_convert_percent_to_percent(self):
-    #     pass
+#         self.assertEqual(sequence.template,
+#                          '/some/path/image_padded.<fnum>.tif')
 
-    # def test_convert_percent_to_pound(self):
-    #     pass
+#     # def test_convert_glob_to_format(self):
+#     #     pass
 
-    # def test_convert_pound_to_angular(self):
-    #     pass
+#     def test_convert_glob_to_glob(self):
+#         glob_repr = '/some/path/image_padded.*.tif'
+#         sequence = Sequence(angular_repr, start=10, end=20)
 
-    # def test_convert_pound_to_format(self):
-    #     pass
+#         sequence.set_type('glob')
 
-    # def test_convert_pound_to_glob(self):
-    #     pass
+#         self.assertEqual(sequence.template, glob_repr)
 
-    # def test_convert_pound_to_percent(self):
-    #     pass
+#     def test_convert_glob_to_percent(self):
+#         sequence = Sequence('/some/path/image_padded.*.tif', start=10, end=20)
 
-    # def test_convert_pound_to_pound(self):
-    #     pass
+#         sequence.set_type('percent', padding=4)
+
+#         self.assertEqual(sequence.template, '/some/path/image_padded.%04d.tif')
+
+#     def test_convert_glob_to_pound(self):
+#         sequence = Sequence('/some/path/image_padded.*.tif', start=10, end=20)
+
+#         sequence.set_type('pound', padding=4)
+
+#         self.assertEqual(sequence.template, '/some/path/image_padded.####.tif')
+
+#     def test_convert_percent_to_angular(self):
+#         sequence = Sequence('/some/path/image_padded.%04d.tif',
+#                             start=10, end=20)
+
+#         sequence.set_type('angular')
+
+#         self.assertEqual(sequence.template,
+#                          '/some/path/image_padded.<fnum>.tif')
+
+#     # def test_convert_percent_to_format(self):
+#     #     pass
+
+#     def test_convert_percent_to_glob(self):
+#         sequence = Sequence('/some/path/image_padded.%04d.tif',
+#                             start=10, end=20)
+
+#         sequence.set_type('glob')
+
+#         self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
+
+#     def test_convert_percent_to_percent(self):
+#         percent_repr = '/some/path/image_padded.%04d.tif'
+#         sequence = Sequence(percent_repr, start=10, end=20)
+
+#         sequence.set_type('percent')
+
+#         self.assertEqual(sequence.template, percent_repr)
+
+#     def test_convert_percent_to_pound(self):
+#         sequence = Sequence('/some/path/image_padded.%04d.tif',
+#                             start=10, end=20)
+
+#         sequence.set_type('pound')
+
+#         self.assertEqual(sequence.template, '/some/path/image_padded.####.tif')
+
+#     def test_convert_pound_to_angular(self):
+#         sequence = Sequence('/some/path/image_padded.####.tif',
+#                             start=10, end=20)
+
+#         sequence.set_type('angular')
+
+#         self.assertEqual(sequence.template,
+#                          '/some/path/image_padded.<fnum>.tif')
+
+#     # def test_convert_pound_to_format(self):
+#     #     pass
+
+#     def test_convert_pound_to_glob(self):
+#         sequence = Sequence('/some/path/image_padded.####.tif',
+#                             start=10, end=20)
+
+#         sequence.set_type('glob')
+
+#         self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
+
+#     def test_convert_pound_to_percent(self):
+#         sequence = Sequence('/some/path/image_padded.####.tif',
+#                             start=10, end=20)
+
+#         sequence.set_type('percent')
+
+#         self.assertEqual(sequence.template, '/some/path/image_padded.%04d.tif')
+
+#     def test_convert_pound_to_percent_0001(self):
+#         sequence = Sequence('/some/path/image_padded.####.tif',
+#                             start=10, end=20)
+
+#         sequence.set_type('percent', padding=3)
+
+#         self.assertEqual(sequence.template, '/some/path/image_padded.%03d.tif')
+
+#     def test_convert_pound_to_pound(self):
+#         pound_repr = '/some/path/image_padded.####.tif'
+#         sequence = Sequence(pound_repr, start=10, end=20)
+
+#         sequence.set_type('pound')
+
+#         self.assertEqual(sequence.template, pound_repr)
 
 
 class SequenceConstructionTestCase(unittest.TestCase):
@@ -442,6 +525,53 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence2.add_in_place(sequence3)
         sequence.add_in_place(sequence2)
         self.assertEqual(sequence.get_end(), 250)
+
+    def test_set_padding(self):
+        '''Change the padding of a sequence object.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=10)
+        new_padding = 3
+        sequence.set_padding(3)
+
+        expected_items = [
+            '/some/path/image_padded.000.tif',
+            '/some/path/image_padded.001.tif',
+            '/some/path/image_padded.002.tif',
+            '/some/path/image_padded.003.tif',
+            '/some/path/image_padded.004.tif',
+            '/some/path/image_padded.005.tif',
+            '/some/path/image_padded.006.tif',
+            '/some/path/image_padded.007.tif',
+            '/some/path/image_padded.008.tif',
+            '/some/path/image_padded.009.tif',
+            '/some/path/image_padded.010.tif',
+        ]
+
+        self.assertEqual([item.path for item in sequence], expected_items)
+        self.assertEqual(sequence.template, '/some/path/image_padded.###.tif')
+
+    def test_set_padding_fail_0001(self):
+        '''Fail to set padding because the padding was too low.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=0, end=10)
+        new_padding = 3
+
+        try:
+            sequence.set_padding(1)
+        except ValueError:
+            pass
+        else:
+            self.assertFalse(True)
+
+    # def test_set_padding_multi(self):
+    #     '''Change the padding of a sequence object.'''
+    #     pound_repr = '/some/path/image_padded.####.####.tif'
+    #     sequence = Sequence(pound_repr, start=[0, 100], end=[300, 12])
+    #     sequence.set_padding(3, position=0)
+
+    #     raise ValueError(list(sequence))
+    #     self.assertEqual(sequence.template,
+    #                      '/some/path/image_padded.###.####.tif')
 
     def test_values_overlaps_matching(self):
         '''Two sequences whose ranges intersect at least once.'''
@@ -974,7 +1104,8 @@ class MakeSequenceTestCase(unittest.TestCase):
         self.assertEqual(len(sequences), 4)
         self.assertEqual(len(sequence_items), 1)
 
-    def test_build_sequences_from_files_adapter(self):
+    def test_build_sequence_from_files_adapter(self):
+        '''Create a way to make a sequence using just a list of file paths.'''
         some_file_paths = \
             [
                 # a discontinuous sequence
@@ -988,6 +1119,7 @@ class MakeSequenceTestCase(unittest.TestCase):
         item_paths = [item.path for item in sequence]
 
         self.assertEqual(some_file_paths, item_paths)
+
 
 # class UdimSequnceSetRangeTestCase(unittest.TestCase):
 #     def test_mari_set_range_index(self):
@@ -1130,6 +1262,119 @@ class MakeSequenceTestCase(unittest.TestCase):
 #         raise NotImplementedError('Need to write this')
 
 
+# class GetSequenceTestCase(unittest.TestCase):
+#     def test_get_sequence_for_mari_sequence(self):
+
+#         pass
+
+#     def test_get_sequence_for_sequences(self):
+#         pass
+
+# def test_build_sequences_of_varying_dimensions(self):
+#     '''Auto-determine the right sequence classes needed to make.
+
+#     In the test_build_sequences_from_files test, a bunch of varying sequence
+#     input is tested but all of the sequences are the same dimension.
+
+#     Here, we'll make sure that UDIMs will work with regular sequences.
+
+#     '''
+#     some_file_paths = \
+#         [
+#             # a discontinuous sequence. This sequence could be a UDIM
+#             # but also could be a file sequence starting at 1001.
+#             # Without the 10th index, (Where 1009 becomes 1100) it's
+#             # impossible to know. So we assume, in that case, it's just
+#             # a regular sequence
+#             #
+#             '/some/path/file_name.1001.tif',
+#             '/some/path/file_name.1002.tif',
+#             '/some/path/file_name.1003.tif',
+#             '/some/path/file_name.1004.tif',
+
+#             '/some/path/file_name.1006.tif',
+#             '/some/path/file_name.1007.tif',
+#             '/some/path/file_name.1008.tif',
+
+#             # a continuous sequence
+#             '/some/path/another_file_name.001009.tif',
+#             '/some/path/another_file_name.001010.tif',
+#             '/some/path/another_file_name.001011.tif',
+#             '/some/path/another_file_name.001012.tif',
+
+#             # A UDIM, 2D sequence
+#             '/some/path/udim_file_name.1001.tif',
+#             '/some/path/udim_file_name.1002.tif',
+#             '/some/path/udim_file_name.1003.tif',
+#             '/some/path/udim_file_name.1004.tif',
+#             '/some/path/udim_file_name.1005.tif',
+#             '/some/path/udim_file_name.1006.tif',
+#             '/some/path/udim_file_name.1007.tif',
+#             '/some/path/udim_file_name.1008.tif',
+#             '/some/path/udim_file_name.1009.tif',
+#             '/some/path/udim_file_name.1101.tif',
+#         ]
+
+#     sequence_objects = get_sequence_objects(some_file_paths)
+#     sequences = [item for item in sequence_objects
+#                  if isinstance(item, Sequence)]
+#     sequence_items = [item for item in sequence_objects
+#                       if isinstance(item, SequenceItem)]
+
+#     self.assertEqual(len(sequences), 4)
+#     self.assertEqual(len(sequence_items), 1)
+
+# def test_sequence_udim_types(self):
+#     some_file_paths = [
+#         # A Mari UDIM sequence
+#         '/some/path/file_name.1001.tif',
+#         '/some/path/file_name.1002.tif',
+#         '/some/path/file_name.1003.tif',
+#         '/some/path/file_name.1004.tif',
+#         '/some/path/file_name.1005.tif',
+#         '/some/path/file_name.1006.tif',
+#         '/some/path/file_name.1007.tif',
+#         '/some/path/file_name.1008.tif',
+#         '/some/path/file_name.1009.tif',
+#         '/some/path/file_name.1101.tif',
+#         '/some/path/file_name.1102.tif',
+#         '/some/path/file_name.1103.tif',
+
+#         # A Zbrush sequence (which is missing its first index)
+#         '/some/path/file_name2_u0_v1.tif'
+#         '/some/path/file_name2_u0_v2.tif'
+#         '/some/path/file_name2_u0_v3.tif'
+#         '/some/path/file_name2_u0_v4.tif'
+#         '/some/path/file_name2_u0_v5.tif'
+#         '/some/path/file_name2_u0_v6.tif'
+#         '/some/path/file_name2_u0_v7.tif'
+#         '/some/path/file_name2_u0_v8.tif'
+#         '/some/path/file_name2_u0_v9.tif'
+#         '/some/path/file_name2_u0_v10.tif'
+#         '/some/path/file_name2_u1_v0.tif'
+#         '/some/path/file_name2_u1_v2.tif'
+
+#         # A Mudbox sequence (algorithmically, it's impossible to know if
+#         # this is a mudbox sequence or a Zbrush sequence that is missing
+#         # its first 10 indexes. But we assume it's Mudbox because what
+#         # person would not use the first 10 indexes?)
+#         #
+#         '/some/path/file_name2_u1_v1.tif'
+#         '/some/path/file_name2_u1_v2.tif'
+#         '/some/path/file_name2_u1_v3.tif'
+#         '/some/path/file_name2_u1_v4.tif'
+#         '/some/path/file_name2_u1_v5.tif'
+#         '/some/path/file_name2_u1_v6.tif'
+#         '/some/path/file_name2_u1_v7.tif'
+#         '/some/path/file_name2_u1_v8.tif'
+#         '/some/path/file_name2_u1_v9.tif'
+#         '/some/path/file_name2_u1_v10.tif'
+#         '/some/path/file_name2_u2_v0.tif'
+#         '/some/path/file_name2_u2_v2.tif'
+#     ]
+
+
+
 class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
     '''Test cases for special sequences that have more than one dimension.
@@ -1140,9 +1385,9 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
     def test_initialization(self):
         '''Create a multi-dimensional sequence.'''
-        pound_repr = '/some/path/image_padded_u*_v*.tif'
         SequenceMultiDimensional(
-            pound_repr, start=[0, 0], end=[0, 3])
+            '/some/path/image_padded_u*_v*.tif',
+            start=[0, 0], end=[0, 3])
 
     def test_udim_sequence_item_set_value_0001(self):
         '''Set the first value of a multi-dimensional sequence item path.
@@ -1152,8 +1397,8 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
             will change the 'u' value.
 
         '''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         udim_image.set_value(4, position=0)
 
         self.assertEqual(udim_image.path, '/some/path/image_padded_u4_v6.tif')
@@ -1166,16 +1411,16 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
             element will change the 'u' value.
 
         '''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         udim_image.set_value(4, position=1)
 
         self.assertEqual(udim_image.path, '/some/path/image_padded_u3_v4.tif')
 
     def test_udim_sequence_item_set_value_failed_0001(self):
         '''Fail to set value if it can't match the dimensions on a sequence.'''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         try:
             udim_image.set_value(4)
         except ValueError:
@@ -1185,17 +1430,17 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
     def test_udim_sequence_item_set_multi_value(self):
         '''Set every value on a multi-dimensional sequence item, at once.'''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         udim_image.set_value([0, 1])
 
         self.assertEqual(udim_image.path, '/some/path/image_padded_u0_v1.tif')
 
     def test_iteration_flat(self):
         '''Iterate over a UDIM sequence's elements.'''
-        pound_repr = '/some/path/image_padded_u*_v*.tif'
         sequence = SequenceMultiDimensional(
-            pound_repr, start=[0, 8], end=[1, 1])
+            '/some/path/image_padded_u*_v*.tif',
+            start=[0, 8], end=[1, 1])
 
         expected_items = \
             [
@@ -1208,6 +1453,7 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
         iterated_items = [item.path for item in sequence]
         self.assertEqual(iterated_items, expected_items)
+
 
 # class MayaFileSequenceTestCase(unittest.TestCase):
 #     def test_image_in_project_folder(self):
