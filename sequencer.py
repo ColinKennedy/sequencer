@@ -160,8 +160,7 @@ class Sequence(collections.MutableSequence):
 
         self.template = template
 
-        repr_sequence = conversion.get_repr_container(template)
-        self.make = repr_sequence['make']
+        self.repr_sequence = conversion.get_repr_container(template)
         self.convert_to_format = repr_sequence['to_format']
         self.sequence_type = repr_sequence['type']
         self.is_valid_type = repr_sequence['is_valid']
@@ -644,11 +643,25 @@ class Sequence(collections.MutableSequence):
 
         # Mutate the format items with our new padding(s)
         for position_ in position:
-            format_items[position_] = self.make(value[position_])
+            format_items[position_] = self.repr_sequence['make'](value[position_])
 
         # Re-construct the template and assign it to our object
         final_template = make_alternating_list(non_digits, format_items)
         self.template = ''.join(final_template)
+
+    def set_type(self, as_type):
+        some_item = self.items[0]  # Doesn't matter which item we use
+        repr_container = conversion.REPR_SEQUENCES[as_type]
+        non_digits = some_item.get_non_digits()
+
+        # '/some/template.####.tif' -> ['/some/path.', '####', '.tif']
+        split_items = split_using_subitems(self.template, non_digits)
+
+        # ['/some/path.', '####', '.tif'] -> ['####']
+        format_items = [item for item in split_items if self.is_valid_type(item)]
+
+        values = [repr_container['get_value'](item) for item in format_items]
+        raise ValueError(('values', values))
 
     def set_start(self, value):
         '''Change the start of this object to be some value.

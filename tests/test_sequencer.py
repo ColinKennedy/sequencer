@@ -134,9 +134,9 @@ class ItemMethodTestCase(unittest.TestCase):
             self.assertTrue(False)
 
 
-# class FileSequenceRepresentationTestCase(unittest.TestCase):
+class FileSequenceRepresentationTestCase(unittest.TestCase):
 
-#     '''Tests where a sequence's representation type gets changed to another.'''
+    '''Tests where a sequence's representation type gets changed to another.'''
 
 #     def test_convert_angular_to_angular(self):
 #         angular_repr = '/some/path/image_padded.<fnum>.tif'
@@ -146,13 +146,13 @@ class ItemMethodTestCase(unittest.TestCase):
 
 #         self.assertEqual(sequence.template, angular_repr)
 
-#     def test_convert_angular_to_glob(self):
-#         sequence = Sequence('/some/path/image_padded.<fnum>.tif',
-#                             start=10, end=20)
+    def test_convert_angular_to_glob(self):
+        sequence = Sequence('/some/path/image_padded.<fnum>.tif',
+                            start=10, end=20)
 
-#         sequence.set_type('glob')
+        sequence.set_type('glob')
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
+        self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
 
 #     def test_convert_angular_to_percent(self):
 #         sequence = Sequence('/some/path/image_padded.<fnum>.tif',
