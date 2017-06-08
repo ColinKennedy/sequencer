@@ -63,7 +63,10 @@ def get_items_dollar_f(path):
 
 def get_value_dollar_f(item):
     dollar_f_regex = r'\$F(\d+)?'
-    return re.match(dollar_f_repr).group(1) or 0
+    match = re.match(dollar_f_repr)
+    if match is None:
+        return 0
+    return int(match.group(1))
 
 
 def to_format_dollar_f(path):
@@ -103,7 +106,7 @@ def is_percent(path):
 
 def make_percent(value):
     '''str: Create a valid percent format item, using value.'''
-    return '%{value}d'.format(value=value)
+    return '%0{value}d'.format(value=value)
 
 
 def get_items_percent(path):
@@ -120,8 +123,11 @@ def get_items_percent(path):
 
 
 def get_value_percent(item):
-    percent_regex = r'(%(?<value>\d+)d)'
-    return re.match(percent_regex, item).group('value') or 0
+    percent_regex = r'(%(?P<value>\d+)d)'
+    match = re.match(percent_regex, item)
+    if match is None:
+        return 0
+    return int(match.group('value'))
 
 
 def to_format_percent(path):

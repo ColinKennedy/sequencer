@@ -5,6 +5,7 @@
 
 # IMPORT STANDARD LIBRARIES
 import tempfile
+import textwrap
 import unittest
 import shutil
 import os
@@ -138,37 +139,41 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 
     '''Tests where a sequence's representation type gets changed to another.'''
 
-#     def test_convert_angular_to_angular(self):
-#         angular_repr = '/some/path/image_padded.<fnum>.tif'
-#         sequence = Sequence(angular_repr, start=10, end=20)
+    def test_convert_angular_to_angular(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.<fnum>.tif'.'''
+        angular_repr = '/a/path/image_padded.<fnum>.tif'
+        sequence = Sequence(angular_repr, start=10, end=20)
 
-#         sequence.set_type('angular')
+        sequence.set_type('angular')
 
-#         self.assertEqual(sequence.template, angular_repr)
+        self.assertEqual(sequence.template, angular_repr)
 
     def test_convert_angular_to_glob(self):
-        sequence = Sequence('/some/path/image_padded.<fnum>.tif',
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/a/path/image_padded.<fnum>.tif',
                             start=10, end=20)
 
         sequence.set_type('glob')
 
-        self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.*.tif')
 
-#     def test_convert_angular_to_percent(self):
-#         sequence = Sequence('/some/path/image_padded.<fnum>.tif',
-#                             start=10, end=20)
+    def test_convert_angular_to_percent(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.<fnum>.tif',
+                            start=10, end=20)
 
-#         sequence.set_type('percent', padding=4)
+        sequence.set_type('percent', padding=4)
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.%04d.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.%04d.tif')
 
-#     def test_convert_angular_to_pound(self):
-#         sequence = Sequence('/some/path/image_padded.<fnum>.tif',
-#                             start=10, end=20)
+    def test_convert_angular_to_pound(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/a/path/image_padded.<fnum>.tif',
+                            start=10, end=20)
 
-#         sequence.set_type('pound', padding=4)
+        sequence.set_type('pound', padding=4)
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.####.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.####.tif')
 
 #     # def test_convert_format_to_angular(self):
 #     #     pass
@@ -185,118 +190,121 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 #     # def test_convert_format_to_pound(self):
 #     #     pass
 
-#     def test_convert_glob_to_angular(self):
-#         sequence = Sequence('/some/path/image_padded.*.tif', start=10, end=20)
+    def test_convert_glob_to_angular(self):
+        '''Change from '/some/path.*.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
 
-#         sequence.set_type('angular')
+        sequence.set_type('angular')
 
-#         self.assertEqual(sequence.template,
-#                          '/some/path/image_padded.<fnum>.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
 
 #     # def test_convert_glob_to_format(self):
 #     #     pass
 
-#     def test_convert_glob_to_glob(self):
-#         glob_repr = '/some/path/image_padded.*.tif'
-#         sequence = Sequence(angular_repr, start=10, end=20)
+    def test_convert_glob_to_glob(self):
+        '''Change from '/some/path.*.tif' to '/some/path.*.tif'.'''
+        glob_repr = '/a/path/image_padded.*.tif'
+        sequence = Sequence(glob_repr, start=10, end=20)
 
-#         sequence.set_type('glob')
+        sequence.set_type('glob')
 
-#         self.assertEqual(sequence.template, glob_repr)
+        self.assertEqual(sequence.template, glob_repr)
 
-#     def test_convert_glob_to_percent(self):
-#         sequence = Sequence('/some/path/image_padded.*.tif', start=10, end=20)
+    def test_convert_glob_to_percent(self):
+        '''Change from '/some/path.*.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
 
-#         sequence.set_type('percent', padding=4)
+        sequence.set_type('percent', padding=4)
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.%04d.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.%04d.tif')
 
-#     def test_convert_glob_to_pound(self):
-#         sequence = Sequence('/some/path/image_padded.*.tif', start=10, end=20)
+    def test_convert_glob_to_pound(self):
+        '''Change from '/some/path.*.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
 
-#         sequence.set_type('pound', padding=4)
+        sequence.set_type('pound', padding=4)
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.####.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.####.tif')
 
-#     def test_convert_percent_to_angular(self):
-#         sequence = Sequence('/some/path/image_padded.%04d.tif',
-#                             start=10, end=20)
+    def test_convert_percent_to_angular(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
 
-#         sequence.set_type('angular')
+        sequence.set_type('angular')
 
-#         self.assertEqual(sequence.template,
-#                          '/some/path/image_padded.<fnum>.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
 
 #     # def test_convert_percent_to_format(self):
 #     #     pass
 
-#     def test_convert_percent_to_glob(self):
-#         sequence = Sequence('/some/path/image_padded.%04d.tif',
-#                             start=10, end=20)
+    def test_convert_percent_to_glob(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
 
-#         sequence.set_type('glob')
+        sequence.set_type('glob')
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.*.tif')
 
-#     def test_convert_percent_to_percent(self):
-#         percent_repr = '/some/path/image_padded.%04d.tif'
-#         sequence = Sequence(percent_repr, start=10, end=20)
+    def test_convert_percent_to_percent(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.%04d.tif'.'''
+        percent_repr = '/a/path/image_padded.%04d.tif'
+        sequence = Sequence(percent_repr, start=10, end=20)
 
-#         sequence.set_type('percent')
+        sequence.set_type('percent')
 
-#         self.assertEqual(sequence.template, percent_repr)
+        self.assertEqual(sequence.template, percent_repr)
 
-#     def test_convert_percent_to_pound(self):
-#         sequence = Sequence('/some/path/image_padded.%04d.tif',
-#                             start=10, end=20)
+    def test_convert_percent_to_pound(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
 
-#         sequence.set_type('pound')
+        sequence.set_type('pound')
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.####.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.####.tif')
 
-#     def test_convert_pound_to_angular(self):
-#         sequence = Sequence('/some/path/image_padded.####.tif',
-#                             start=10, end=20)
+    def test_convert_pound_to_angular(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
 
-#         sequence.set_type('angular')
+        sequence.set_type('angular')
 
-#         self.assertEqual(sequence.template,
-#                          '/some/path/image_padded.<fnum>.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
 
 #     # def test_convert_pound_to_format(self):
 #     #     pass
 
-#     def test_convert_pound_to_glob(self):
-#         sequence = Sequence('/some/path/image_padded.####.tif',
-#                             start=10, end=20)
+    def test_convert_pound_to_glob(self):
+        '''Change from '/some/path.####.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
 
-#         sequence.set_type('glob')
+        sequence.set_type('glob')
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.*.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.*.tif')
 
-#     def test_convert_pound_to_percent(self):
-#         sequence = Sequence('/some/path/image_padded.####.tif',
-#                             start=10, end=20)
+    def test_convert_pound_to_percent(self):
+        '''Change from '/some/path.####.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
 
-#         sequence.set_type('percent')
+        sequence.set_type('percent')
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.%04d.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.%04d.tif')
 
-#     def test_convert_pound_to_percent_0001(self):
-#         sequence = Sequence('/some/path/image_padded.####.tif',
-#                             start=10, end=20)
+    def test_convert_pound_to_percent_0001(self):
+        '''Change from '/some/path.####.tif' to '/some/path.%03d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
 
-#         sequence.set_type('percent', padding=3)
+        sequence.set_type('percent', padding=3)
 
-#         self.assertEqual(sequence.template, '/some/path/image_padded.%03d.tif')
+        self.assertEqual(sequence.template, '/a/path/image_padded.%03d.tif')
 
-#     def test_convert_pound_to_pound(self):
-#         pound_repr = '/some/path/image_padded.####.tif'
-#         sequence = Sequence(pound_repr, start=10, end=20)
+    def test_convert_pound_to_pound(self):
+        '''Change from '/some/path.####.tif' to '/some/path.####.tif'.'''
+        pound_repr = '/a/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=10, end=20)
 
-#         sequence.set_type('pound')
+        sequence.set_type('pound')
 
-#         self.assertEqual(sequence.template, pound_repr)
+        self.assertEqual(sequence.template, pound_repr)
 
 
 class SequenceConstructionTestCase(unittest.TestCase):
@@ -530,7 +538,6 @@ class SequenceMethodTestCase(unittest.TestCase):
         '''Change the padding of a sequence object.'''
         pound_repr = '/some/path/image_padded.####.tif'
         sequence = Sequence(pound_repr, start=0, end=10)
-        new_padding = 3
         sequence.set_padding(3)
 
         expected_items = [
@@ -554,7 +561,6 @@ class SequenceMethodTestCase(unittest.TestCase):
         '''Fail to set padding because the padding was too low.'''
         pound_repr = '/some/path/image_padded.####.tif'
         sequence = Sequence(pound_repr, start=0, end=10)
-        new_padding = 3
 
         try:
             sequence.set_padding(1)
@@ -1054,7 +1060,176 @@ class SequenceMethodTestCase(unittest.TestCase):
     #     pass
 
 
+class SequenceObjectPrintingTestCase(unittest.TestCase):
+
+    '''Test to make sure __repr__ and __str__ work, as expected.'''
+
+    def test_str_sequence_item(self):
+        '''Test the print of a regular sequence item.'''
+        item = SequenceItem('/some/path/image_padded.0001.tif')
+        self.assertTrue(str(item), "'/some/path/image_padded.0001.tif'")
+
+    def test_repr_sequence_item(self):
+        '''Test the repr of a regular sequence item.'''
+        item = SequenceItem('/some/path/image_padded.0001.tif')
+        self.assertTrue(repr(item),
+                        "SequenceItem('/some/path/image_padded.0001.tif')")
+
+    def test_str_sequence(self):
+        '''Test the print of a regular sequence.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=10, end=20)
+
+        self.assertEqual(
+            str(sequence), '/some/path/image_padded.####.tif [10-20]')
+
+    def test_str_sequence_discontinuous(self):
+        '''Test the print of a sequence that has two broken sequences inside.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=35, end=42)
+
+        sequence1.add_in_place(sequence2)
+
+        self.assertEqual(
+            str(sequence1), '/some/path/image_padded.####.tif [10-20, 35-42]')
+
+    def test_str_sequence_complex_0001(self):
+        '''Test the print of a sequence with nested and individual elements.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=35, end=42)
+        sequence1.add_in_place(sequence2)
+
+        for index in range(22, 34, 2):
+            sequence1.add_in_place(index)
+
+        sequence1.add_in_place(100)
+
+        self.assertEqual(
+            str(sequence1),
+            '/some/path/image_padded.####.tif [10-20, 22-32x2, 35-42, 100]')
+
+    def test_repr_sequence(self):
+        '''Test the repr of a regular sequence.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(pound_repr, start=10, end=20)
+
+        expected_output = \
+            '''\
+            Sequence(template='/some/path/image_padded.####.tif',
+                items=[
+                    SequenceItem('/some/path/image_padded.0010.tif'),
+                    SequenceItem('/some/path/image_padded.0011.tif'),
+                    SequenceItem('/some/path/image_padded.0012.tif'),
+                    SequenceItem('/some/path/image_padded.0013.tif'),
+                    SequenceItem('/some/path/image_padded.0014.tif'),
+                    SequenceItem('/some/path/image_padded.0015.tif'),
+                    SequenceItem('/some/path/image_padded.0016.tif'),
+                    SequenceItem('/some/path/image_padded.0017.tif'),
+                    SequenceItem('/some/path/image_padded.0018.tif'),
+                    SequenceItem('/some/path/image_padded.0019.tif'),
+                    SequenceItem('/some/path/image_padded.0020.tif'),
+                ]
+            )\
+            '''.rstrip()
+
+        expected_output = textwrap.dedent(expected_output)
+        self.assertEqual(repr(sequence), expected_output)
+
+    def test_repr_sequence_discontinuous(self):
+        '''Test the print of a sequence that has two broken sequences inside.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=35, end=37)
+
+        sequence1.add_in_place(sequence2)
+
+        expected_output = textwrap.dedent(
+        '''\
+        Sequence(template='/some/path/image_padded.####.tif',
+            items=[
+                SequenceItem('/some/path/image_padded.0010.tif'),
+                SequenceItem('/some/path/image_padded.0011.tif'),
+                SequenceItem('/some/path/image_padded.0012.tif'),
+                SequenceItem('/some/path/image_padded.0013.tif'),
+                SequenceItem('/some/path/image_padded.0014.tif'),
+                SequenceItem('/some/path/image_padded.0015.tif'),
+                SequenceItem('/some/path/image_padded.0016.tif'),
+                SequenceItem('/some/path/image_padded.0017.tif'),
+                SequenceItem('/some/path/image_padded.0018.tif'),
+                SequenceItem('/some/path/image_padded.0019.tif'),
+                SequenceItem('/some/path/image_padded.0020.tif'),
+                Sequence(template='/some/path/image_padded.####.tif',
+                    items=[
+                        SequenceItem('/some/path/image_padded.0035.tif'),
+                        SequenceItem('/some/path/image_padded.0036.tif'),
+                        SequenceItem('/some/path/image_padded.0037.tif'),
+                    ]
+                ),
+            ]
+        )\
+        ''').rstrip()
+
+        self.assertEqual(repr(sequence1), expected_output)
+
+    def test_repr_sequence_complex_0001(self):
+        '''Test the print of a sequence with nested and individual elements.'''
+        pound_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(pound_repr, start=10, end=20)
+        sequence2 = Sequence(pound_repr, start=35, end=42)
+        sequence1.add_in_place(sequence2)
+
+        for index in range(22, 34, 2):
+            sequence1.add_in_place(index)
+
+        sequence1.add_in_place(100)
+
+        expected_output = textwrap.dedent(
+        '''\
+        Sequence(template='/some/path/image_padded.####.tif',
+            items=[
+                SequenceItem('/some/path/image_padded.0010.tif'),
+                SequenceItem('/some/path/image_padded.0011.tif'),
+                SequenceItem('/some/path/image_padded.0012.tif'),
+                SequenceItem('/some/path/image_padded.0013.tif'),
+                SequenceItem('/some/path/image_padded.0014.tif'),
+                SequenceItem('/some/path/image_padded.0015.tif'),
+                SequenceItem('/some/path/image_padded.0016.tif'),
+                SequenceItem('/some/path/image_padded.0017.tif'),
+                SequenceItem('/some/path/image_padded.0018.tif'),
+                SequenceItem('/some/path/image_padded.0019.tif'),
+                SequenceItem('/some/path/image_padded.0020.tif'),
+                SequenceItem('/some/path/image_padded.0022.tif'),
+                SequenceItem('/some/path/image_padded.0024.tif'),
+                SequenceItem('/some/path/image_padded.0026.tif'),
+                SequenceItem('/some/path/image_padded.0028.tif'),
+                SequenceItem('/some/path/image_padded.0030.tif'),
+                SequenceItem('/some/path/image_padded.0032.tif'),
+                Sequence(template='/some/path/image_padded.####.tif',
+                    items=[
+                        SequenceItem('/some/path/image_padded.0035.tif'),
+                        SequenceItem('/some/path/image_padded.0036.tif'),
+                        SequenceItem('/some/path/image_padded.0037.tif'),
+                        SequenceItem('/some/path/image_padded.0038.tif'),
+                        SequenceItem('/some/path/image_padded.0039.tif'),
+                        SequenceItem('/some/path/image_padded.0040.tif'),
+                        SequenceItem('/some/path/image_padded.0041.tif'),
+                        SequenceItem('/some/path/image_padded.0042.tif'),
+                    ]
+                ),
+                SequenceItem('/some/path/image_padded.0100.tif'),
+            ]
+        )\
+        ''').rstrip()
+
+        self.assertEqual(repr(sequence1), expected_output)
+
+
 class MakeSequenceTestCase(unittest.TestCase):
+
+    '''Test the different ways that we can create sequences.'''
+
     def test_build_sequences_from_files(self):
         '''Create a sequence from a list of files.
 
@@ -1372,7 +1547,6 @@ class MakeSequenceTestCase(unittest.TestCase):
 #         '/some/path/file_name2_u2_v0.tif'
 #         '/some/path/file_name2_u2_v2.tif'
 #     ]
-
 
 
 class SequenceMultiDimensionalTestCase(unittest.TestCase):

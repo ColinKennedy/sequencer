@@ -11,6 +11,7 @@ for a sequence is 3 consecutive items.
 # IMPORT STANDARD LIBRARIES
 import collections
 import functools
+import textwrap
 import six
 import re
 
@@ -23,6 +24,7 @@ from . import udim_iterator
 from .core import grouping
 from . import conversion
 from .core import check
+
 
 
 class Range(object):
@@ -73,6 +75,8 @@ class Sequence(collections.MutableSequence):
         is that none of its items or inner sequences overlap.
 
     '''
+
+    INDENT = 0
 
     def __init__(self, template, start=0, end=0):
         '''Create the object with its initial sequence values.
@@ -161,9 +165,6 @@ class Sequence(collections.MutableSequence):
         self.template = template
 
         self.repr_sequence = conversion.get_repr_container(template)
-        self.convert_to_format = repr_sequence['to_format']
-        self.sequence_type = repr_sequence['type']
-        self.is_valid_type = repr_sequence['is_valid']
 
         if (not start and not end) or start == end:
             self.items = []
@@ -171,10 +172,10 @@ class Sequence(collections.MutableSequence):
 
         self.start_item = \
             self.get_sequence_item(
-                self.convert_to_format(self.template).format(*start))
+                self.repr_sequence['to_format'](self.template).format(*start))
         self.end_item = \
             self.get_sequence_item(
-                self.convert_to_format(self.template).format(*end))
+                self.repr_sequence['to_format'](self.template).format(*end))
 
         self.items = self.get_range_items()
 
@@ -521,13 +522,22 @@ class Sequence(collections.MutableSequence):
 
     def get_format_path(self):
         '''str: Create a Python-style format string from this sequence.'''
-        return self.convert_to_format(self.template)
+        return self.repr_sequence['to_format'](self.template)
 
-    def get_start_item(self):
+    def get_start_item(self, recursive=False):
         '''SequenceItem or Sequence: The object with the lowest value.'''
+        def get_start_recursive(item):
+            '''Search this object until a non-Sequence object is returned.'''
+            try:
+                return get_start_recursive(item.get_start_item())
+            except AttributeError:
+                return item
+
+        if recursive:
+            return get_start_recursive(self.start_item)
         return self.start_item
 
-    def get_start(self, mode='value'):
+    def get_start(self, mode='value', recursive=False):
         '''Get the lowest value of this sequence, or its parent object.
 
         Note:
@@ -547,14 +557,23 @@ class Sequence(collections.MutableSequence):
         if mode == 'value':
             mode = 'start'
 
-        start_item = self.get_start_item()
+        start_item = self.get_start_item(recursive=recursive)
         return self._get_range_point(start_item, mode)
 
-    def get_end_item(self):
+    def get_end_item(self, recursive=False):
         '''SequenceItem or Sequence: The object with the highest value.'''
+        def get_end_recursive(item):
+            '''Search this object until a non-Sequence object is returned.'''
+            try:
+                return get_end_recursive(item.get_end_item())
+            except AttributeError:
+                return item
+
+        if recursive:
+            return get_end_recursive(self.end_item)
         return self.end_item
 
-    def get_end(self, mode='value'):
+    def get_end(self, mode='value', recursive=False):
         '''Get the highest value of this sequence, or its parent object.
 
         Note:
@@ -574,7 +593,7 @@ class Sequence(collections.MutableSequence):
         if mode == 'value':
             mode = 'end'
 
-        end_item = self.get_end_item()
+        end_item = self.get_end_item(recursive=recursive)
         return self._get_range_point(end_item, mode)
 
     def set_end(self, value):
@@ -589,7 +608,7 @@ class Sequence(collections.MutableSequence):
                 If value is a str, it must be a path that matches this instance.
 
         '''
-        self.__set_range_point(self.end_item, value)
+        self.__set_range_point(self.get_end_item(recursive=True), value)
 
     def set_padding(self, value, position=None, force=False):
         '''Change the padding on this sequence to some new value.
@@ -639,29 +658,51 @@ class Sequence(collections.MutableSequence):
         split_items = split_using_subitems(self.template, non_digits)
 
         # ['/some/path.', '####', '.tif'] -> ['####']
-        format_items = [item for item in split_items if self.is_valid_type(item)]
+        format_items = [item for item in split_items
+                        if self.repr_sequence['is_valid'](item)]
 
         # Mutate the format items with our new padding(s)
         for position_ in position:
-            format_items[position_] = self.repr_sequence['make'](value[position_])
+            new_value = self.repr_sequence['make'](value[position_])
+            format_items[position_] = new_value
 
         # Re-construct the template and assign it to our object
         final_template = make_alternating_list(non_digits, format_items)
         self.template = ''.join(final_template)
 
-    def set_type(self, as_type):
+    def set_type(self, as_type, padding=None):
+        repr_sequence = conversion.REPR_SEQUENCES[as_type]
+        if self.repr_sequence['padding_case'] == 'insensitive' \
+                and repr_sequence['padding_case'] == 'sensitive' \
+                and padding is None:
+            raise ValueError("You must specify a padding when going from a "
+                             "type that doesn't care about padding (like glob) "
+                             "to another that does (like pound).")
+
+        if repr_sequence['type'] == self.repr_sequence['type']:
+            return  # Nothing to do
+
         some_item = self.items[0]  # Doesn't matter which item we use
-        repr_container = conversion.REPR_SEQUENCES[as_type]
         non_digits = some_item.get_non_digits()
 
         # '/some/template.####.tif' -> ['/some/path.', '####', '.tif']
         split_items = split_using_subitems(self.template, non_digits)
 
         # ['/some/path.', '####', '.tif'] -> ['####']
-        format_items = [item for item in split_items if self.is_valid_type(item)]
+        format_items = [item for item in split_items
+                        if self.repr_sequence['is_valid'](item)]
 
-        values = [repr_container['get_value'](item) for item in format_items]
-        raise ValueError(('values', values))
+        values = (self.repr_sequence['get_value'](item) for item in format_items)
+        values = [value if value is not None else padding for value in values]
+
+        new_digit_items = [repr_sequence['make'](value) for value in values]
+
+        new_template_list = make_alternating_list(non_digits, new_digit_items)
+        self.template = ''.join(new_template_list)
+        self.repr_sequence = repr_sequence
+
+        if padding is not None:
+            self.set_padding(padding)
 
     def set_start(self, value):
         '''Change the start of this object to be some value.
@@ -995,12 +1036,39 @@ class Sequence(collections.MutableSequence):
 
     def __repr__(self):
         '''str: A description of how to re-create this object, for debugging.'''
-        return '{cls_}(template={template!r}, start={start}, end={end})' \
-            ''.format(cls_=self.__class__.__name__,
-                      template=self.template,
-                      start=self.get_start(),
-                      end=self.get_end())
-        # TODO : I need to print items with indentation, recursively
+        self.INDENT += 1
+        has_sequences = False
+        reprs = []
+        for item in self.as_range('real'):
+            if isinstance(item, self.__class__):
+                has_sequences = True
+            reprs.append(repr(item))
+
+        repr_output = textwrap.dedent(
+            '''\
+            {cls_}(template={template!r},
+                items=[
+                    {items},
+                ]
+            )\
+            ''').rstrip()
+
+        for index, item in enumerate(reprs):
+            if index == 0:
+                reprs[index] = str(item)
+            else:
+                reprs[index] = indent(item, '        ' * self.INDENT)
+
+        repr_output = repr_output.format(
+            cls_=self.__class__.__name__,
+            template=self.template,
+            items=',\n'.join(reprs),
+        )
+
+        if not has_sequences:
+            self.INDENT = 0
+
+        return repr_output
 
     def __setitem__(self, index, value):
         '''Add the item to some location in a sequence.
@@ -1018,7 +1086,31 @@ class Sequence(collections.MutableSequence):
 
     def __str__(self):
         '''str: Display the items in this object, as a string.'''
-        return str(self.items)
+        def get_value(item):
+            '''int: The value of a SequenceItem.'''
+            return item.get_value()
+
+        values = self.as_range('flat', function=get_value)
+        value_ranges = grouping.ranges(list(values), return_range=False)
+
+        ranges = []
+        for obj in value_ranges:
+            if isinstance(obj, int):
+                ranges.append(str(obj))
+            else:
+                try:
+                    start, end, step = obj
+                except ValueError:
+                    start, end = obj
+                    step = 1
+
+                range_str = '{start}-{end}'.format(start=start, end=end)
+                if step != 1:
+                    range_str += 'x{step}'.format(step=step)
+                ranges.append(range_str)
+
+        return '{template} [{ranges}]'.format(template=self.template,
+                                              ranges=', '.join(ranges))
 
 
 class SequenceMultiDimensional(Sequence):
@@ -1242,6 +1334,24 @@ def split_using_subitems(base, subitems, include_subitems=False):
                 final_split.append()
 
     return tuple(final_split)
+
+
+def indent(text, prefix, predicate=None):
+    try:
+        import textwrap
+        function = textwarp.indent
+    except (NameError, ImportError):
+        def _indent(text, prefix, predicate=None):
+            def _should_indent(line):
+                return True
+
+            if predicate is None:
+                predicate = _should_indent
+
+            return ''.join([prefix + line if predicate(line) else line
+                            for line in text.splitlines(True)])
+        function = _indent
+    return function(text, prefix, predicate)
 
 
 if __name__ == '__main__':
