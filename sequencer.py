@@ -118,7 +118,7 @@ class Sequence(collections.MutableSequence):
                 The end of the sequence. Default: 0.
 
         '''
-        def get_format_info_pound(padding, length):
+        def get_format_info_hash(padding, length):
             return ['#' * padding] * length
 
         def get_format_info_glob(padding, length):
@@ -138,10 +138,10 @@ class Sequence(collections.MutableSequence):
             example_item = items[0]
 
             # Choose the a padding insensitive type or sensitive type
-            # (glob vs pound, for example)
+            # (glob vs hash, for example)
             #
             if has_consistent_padding:
-                format_info_func = get_format_info_pound
+                format_info_func = get_format_info_hash
             else:
                 format_info_func = get_format_info_glob
 
@@ -673,7 +673,7 @@ class Sequence(collections.MutableSequence):
                 and padding is None:
             raise ValueError("You must specify a padding when going from a "
                              "type that doesn't care about padding (like glob) "
-                             "to another that does (like pound).")
+                             "to another that does (like hash).")
 
         if repr_sequence['type'] == self.repr_sequence['type']:
             return  # Nothing to do
@@ -1184,7 +1184,7 @@ def get_sequence_objects(file_paths, sort=sorted):
     #
     for sequence_format_path, paths in sequence_item_objects.items():
         paths = [sequencer_item.SequenceItem(path) for path in paths]
-        pound_path = conversion.to_pound_from_format(sequence_format_path)
+        hash_path = conversion.to_hash_from_format(sequence_format_path)
         sequence = None
 
         for group in grouping.ranges(
@@ -1195,7 +1195,7 @@ def get_sequence_objects(file_paths, sort=sorted):
 
             start_value = group[0]
             end_value = group[1]
-            sequence_ = Sequence(pound_path, start_value, end_value)
+            sequence_ = Sequence(hash_path, start_value, end_value)
 
             if sequence is None:
                 sequence = sequence_

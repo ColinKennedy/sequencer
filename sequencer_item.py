@@ -342,7 +342,7 @@ class SequenceItem(object):
         # TODO : Make relative
         import sequencer
 
-        def replace_digit_with_pound(match):
+        def replace_digit_with_hash(match):
             '''str: Some varying number of '#' for match. Match must be > 0.'''
             return '#' * len(match.group(1))
 
@@ -362,7 +362,7 @@ class SequenceItem(object):
         # Note: This assumes that the path(s) are padding sensitive. This may
         #       cause issues in the future.
         #
-        formatted_path = re.sub(r'(\d+)', replace_digit_with_pound, self.path)
+        formatted_path = re.sub(r'(\d+)', replace_digit_with_hash, self.path)
         return sequencer.Sequence(formatted_path, start=start_item.get_value(),
                                   end=end_item.get_value())
 

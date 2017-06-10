@@ -116,10 +116,10 @@ def get_items_percent(path):
     percent_regex = r'(%(\d+)d)'
     found_percents = re.findall(percent_regex, path_name)
 
-    for replace_str, number_of_pounds in found_percents:
-        path_name = path_name.replace(replace_str, int(number_of_pounds) * '#')
+    for replace_str, number_of_hashes in found_percents:
+        path_name = path_name.replace(replace_str, int(number_of_hashes) * '#')
 
-    return get_items_pound(os.path.join(root_path, path_name))
+    return get_items_hash(os.path.join(root_path, path_name))
 
 
 def get_value_percent(item):
@@ -135,30 +135,30 @@ def to_format_percent(path):
     return re.sub(r'%(\d+)d', replace_formatted_digits, path)
 
 
-def is_pound(path):
-    '''bool: If the path is a pound-style syntax (somefile.####.tif).'''
+def is_hash(path):
+    '''bool: If the path is a hash-style syntax (somefile.####.tif).'''
     return '#' in os.path.basename(path)
 
 
-def make_pound(value):
-    '''str: Create a valid pound format item, using value.'''
+def make_hash(value):
+    '''str: Create a valid hash format item, using value.'''
     return '#' * value
 
 
-def get_items_pound(path):
-    '''list[str]: The file(s)/folder(s) at this pound-style path, if any.'''
+def get_items_hash(path):
+    '''list[str]: The file(s)/folder(s) at this hash-style path, if any.'''
     root_dir, path_hash = os.path.split(path)
     path_comp = re.compile(path_hash.replace('#', r'\d'))
     return [os.path.join(root_dir, item) for item in os.listdir(root_dir)
             if path_comp.match(item)]
 
 
-def get_value_pound(item):
+def get_value_hash(item):
     return item.count('#')
 
 
-def to_format_from_pound(path):
-    '''str: Convert a pound-style path to a Python-format-friendly path.'''
+def to_format_from_hash(path):
+    '''str: Convert a hash-style path to a Python-format-friendly path.'''
     def replace_with_formatted_digits(match):
         '''str: Generate a padded format using the value found in match.'''
         return '{:0' + str(len(match.group(0))) + 'd}'
@@ -166,13 +166,13 @@ def to_format_from_pound(path):
     return re.sub('(#+)', replace_with_formatted_digits, path)
 
 
-def to_pound_from_format(path):
-    '''str: Convert a Python-format-friendly to a pound-style path.'''
-    def replace_with_pound_characters(match):
+def to_hash_from_format(path):
+    '''str: Convert a Python-format-friendly to a hash-style path.'''
+    def replace_with_hash_characters(match):
         '''str: Create a #### from a matched regex object.'''
         return '#' * int(match.group(1))
 
-    return re.sub(FORMAT_REGEX_STR, replace_with_pound_characters, path)
+    return re.sub(FORMAT_REGEX_STR, replace_with_hash_characters, path)
 
 
 def get_padding(path):
@@ -347,14 +347,14 @@ REPR_SEQUENCES = ReadOnlyDict({
             'padding_case': 'sensitive',
         }),
 
-    'pound':
+    'hash':
         ReadOnlyDict({
-            'is_valid': is_pound,
-            'get_value': get_value_pound,
-            'items': get_items_pound,
-            'make': make_pound,
-            'to_format': to_format_from_pound,
-            'type': 'pound',
+            'is_valid': is_hash,
+            'get_value': get_value_hash,
+            'items': get_items_hash,
+            'make': make_hash,
+            'to_format': to_format_from_hash,
+            'type': 'hash',
             'padding_case': 'sensitive',
         }),
 })
