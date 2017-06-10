@@ -463,6 +463,12 @@ class SequenceConstructionTestCase(unittest.TestCase):
 
         self.assertEqual(sequence.get_start(), self.start)
 
+    def test_production_sequence(self):
+        '''Create a sequence from a real production path.'''
+        some_sequence = '/jobs/someJob_12351394332/shots/sh01/FYI_090/renders/colin-k/FYI_090_some_information.####.tif'
+        sequence = Sequence(some_sequence, start=1001, end=2001)
+        self.assertEqual(sequence.get_dimensions(), 1)
+
     # @clear_temp_files_folders
     # def test_0001_image_path_udim_mari(self):
     #     raise NotImplementedError('Need to write this')
@@ -889,15 +895,15 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence1 = Sequence(pound_repr, start=10, end=20)
         sequence2 = Sequence(pound_repr, start=21, end=29)
 
-        self.assertTrue(sequence2.is_after(sequence1))
+        self.assertTrue(sequence2 > sequence1)
 
     def test_add_sequence_object_after_failed(self):
-        '''Make sure that is_after fails if Sequences contain any overlap.'''
+        '''Make sure that > fails if Sequences contain any overlap.'''
         pound_repr = '/some/path/image_padded.####.tif'
         sequence1 = Sequence(pound_repr, start=10, end=20)
         sequence2 = Sequence(pound_repr, start=19, end=29)
 
-        self.assertFalse(sequence2.is_after(sequence1))
+        self.assertFalse(sequence2 > sequence1)
 
     def test_add_sequence_object_before(self):
         '''Determine which sequence comes earlier than the other sequence.
@@ -910,15 +916,15 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence1 = Sequence(pound_repr, start=10, end=20)
         sequence2 = Sequence(pound_repr, start=21, end=29)
 
-        self.assertTrue(sequence1.is_before(sequence2))
+        self.assertTrue(sequence1 < sequence2)
 
     def test_add_sequence_object_before_failed(self):
-        '''Make sure that is_before fails if Sequences contain any overlap.'''
+        '''Make sure that < fails if Sequences contain any overlap.'''
         pound_repr = '/some/path/image_padded.####.tif'
         sequence1 = Sequence(pound_repr, start=10, end=20)
         sequence2 = Sequence(pound_repr, start=19, end=29)
 
-        self.assertFalse(sequence1.is_before(sequence2))
+        self.assertFalse(sequence1 < sequence2)
 
     def test_sequence_has_str_path(self):
         '''Check if a string path exists in a sequence.'''

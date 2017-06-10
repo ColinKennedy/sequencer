@@ -16,14 +16,24 @@ from .core import check
 
 class UdimBaseIterator(six.Iterator):
 
-    '''Force numbers in the UDIM to skip.'''
+    '''Force numbers in the UDIM to skip, based on some arbitrary width.
 
-    def __init__(self, start=0, end=0):
+    Note:
+        This class operates on base 0. It is not meant to be used, directly.
+        If you need a Mari-style UDIM iterator, use UdimIterator or some other
+        subclass, if it exists after the time of writing
+        (2017-06-10 15:27:39.511833).
+
+    '''
+
+    def __init__(self, start=0, end=0, width=10):
         '''Create the iterator and set its target value.
 
         Args:
             start (int): The minimum value that this object will build towards.
             end (int): The maximum value that this object will build towards.
+            width (:obj:`int`, optional):
+                The point in which a UDIM value should skip. Default: 10.
 
         Raises:
             ValueError: A UDIM cannot have a negative shell value.
@@ -39,6 +49,7 @@ class UdimBaseIterator(six.Iterator):
 
         self.start = start
         self.end = end
+        self.width = width
 
     def __iter__(self):
         '''Iterate over this object and yield values until it hits its maximum.
@@ -47,22 +58,23 @@ class UdimBaseIterator(six.Iterator):
             int: UDIM values.
 
         '''
-        width = 10
         values = [number for number in range(self.start, self.end)]
         for value in values:
-            yield (value // width) * 100 + value % width
+            yield (value // self.width) * 100 + value % self.width
 
 
 class UdimIterator(UdimBaseIterator):
 
     '''Optimize the base iterator to have more convenient input values.'''
 
-    def __init__(self, start=0, end=0, udim_type='raw'):
+    def __init__(self, start=0, end=0, width=10, udim_type='raw'):
         '''Convert the value to work with the base iterator.
 
         Args:
             start (int): The beginning of this udim sequence iteraor.
             end (int): The end of this udim sequence iteraor.
+            width (:obj:`int`, optional):
+                The point in which a UDIM value should skip. Default: 10.
             udim_type (:obj:`str`, optional):
                 A strategy to conform the given start/end values to something
                 that this class can understand. There are several types.
@@ -75,7 +87,7 @@ class UdimIterator(UdimBaseIterator):
 
         '''
         def convert_mari_to_iterator(value):
-            '''int: Change a Mari index to a value that this iterator can use.'''
+            '''int: Change a Mari index to a value that this iterator uses.'''
             value = int(value)
             value -= 1000
             return ((value // 100) * 10) + value % 10
@@ -114,17 +126,18 @@ class UdimIntAdapter(object):
 
     '''A class that will make dealing with 1D/2D UDIM indexes less painful.'''
 
-    width = 10
-
-    def __init__(self, value):
+    def __init__(self, value, width=10):
         '''Store the given value.
 
         Args:
             value (int): The value to adapt.
+            width (:obj:`int`, optional):
+                The point in which a UDIM value should skip. Default: 10.
 
         '''
         super(UdimIntAdapter, self).__init__()
         self.value = value
+        self.width = width
 
     def __iadd__(self, value):
         '''Convert the value to something is object can understand and += it.
@@ -143,17 +156,20 @@ class UdimIterator2D(UdimIterator):
     '''Create a 2D UDIM representation, for Zbrush and Mudbox.'''
 
     # The number of X UDIM shells allowed before you must increment
-    width = UdimIntAdapter.width
 
-    def __init__(self, start=0, end=0):
+    def __init__(self, start=0, end=0, width=10):
         '''Create the instance and pass its value, directly.
 
         Args:
+            start (int): The minimum value that this object will build towards.
             end (int): The maximum UDIM value to iterate over.
+            width (:obj:`int`, optional):
+                The point in which a UDIM value should skip. Default: 10.
 
         '''
         self._end = None  # Give it some default value, just in case
         self._start = None  # Give it some default value, just in case
+        self.width = width
 
         if check.is_itertype(start) and len(start) == 2:
             start = convert_2d_to_index(start, width=self.width)
@@ -163,8 +179,7 @@ class UdimIterator2D(UdimIterator):
 
         super(UdimIterator2D, self).__init__(start=start, end=end)
 
-    @classmethod
-    def _increment_value(cls, value):
+    def _increment_value(self, value):
         '''Get the next appropriate value for some UDIM value.
 
         Args:
@@ -174,7 +189,7 @@ class UdimIterator2D(UdimIterator):
             int: The next value up from this value.
 
         '''
-        return increment_multi_udim_value(value, cls.width)
+        return increment_multi_udim_value(value, self.width)
 
     @property
     def end(self):

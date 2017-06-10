@@ -482,14 +482,6 @@ class Sequence(collections.MutableSequence):
             }
         return mode_options[mode]()
 
-    def is_after(self, sequence):
-        '''bool: Check if the Sequence is later than the current object.'''
-        return self._is_left_of(sequence, self)
-
-    def is_before(self, sequence):
-        '''bool: Check if the Sequence is earlier than the current object.'''
-        return self._is_left_of(self, sequence)
-
     def values_overlap(self, sequence):
         '''Check if the given sequence's range intersect this object's range.
 
@@ -506,7 +498,7 @@ class Sequence(collections.MutableSequence):
             bool: If the sequence overlaps.
 
         '''
-        return not (self.is_before(sequence) or self.is_after(sequence))
+        return not (self < sequence or self > sequence)
 
     def overlaps(self, sequence):
         '''Check if the sequence's name and range are similar to this object.
@@ -536,6 +528,10 @@ class Sequence(collections.MutableSequence):
         if recursive:
             return get_start_recursive(self.start_item)
         return self.start_item
+
+    def get_dimensions(self):
+        '''int: The number of ways that this sequence can increment.'''
+        return self.items[0].get_dimensions()
 
     def get_start(self, mode='value', recursive=False):
         '''Get the lowest value of this sequence, or its parent object.
@@ -727,10 +723,10 @@ class Sequence(collections.MutableSequence):
         Returns:
             bool: If the given sequence is a subset of this object and
                   the sequences have no overlapping items, return True.
-
+ \
         '''
-        is_contained = not self.is_before(sequence) \
-            and not self.is_after(sequence) \
+        is_contained = not self < sequence \
+            and not self > sequence \
             and self.overlaps(sequence)
 
         if not is_contained:
@@ -924,12 +920,11 @@ class Sequence(collections.MutableSequence):
         if function is None:
             function = return_as_is
 
-        mode_functions = \
-            {
-                'bounds': full_range,
-                'flat': recursive_yield,
-                'real': yield_as_is,
-            }
+        mode_functions = {
+            'bounds': full_range,
+            'flat': recursive_yield,
+            'real': yield_as_is,
+        }
 
         if mode == 'bounds':
             for item in mode_functions[mode](self):
@@ -985,9 +980,15 @@ class Sequence(collections.MutableSequence):
             other (Sequence): The sequence to check.
 
         '''
-        return isinstance(other, self.__class__) and \
-            self.get_start() == other.get_start() and \
-            self.get_end() == other.get_end()
+        return isinstance(other, self.__class__) and self.overlaps(other)
+
+    def __gt__(self, other):
+        '''bool: Check if the Sequence is later than the current object.'''
+        return self._is_left_of(other, self)
+
+    def __lt__(self, other):
+        '''bool: Check if the Sequence is earlier than the current object.'''
+        return self._is_left_of(self, other)
 
     def __getitem__(self, index):
         '''Get the sequence object stored at the given index.
