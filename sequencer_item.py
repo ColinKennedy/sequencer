@@ -16,7 +16,6 @@ from six.moves import range
 from .core import check
 
 
-# TODO : Make __repr__ for SequenceItem, Sequence, and nested Sequence
 class SequenceItem(object):
 
     '''An item of a sequence. It contains a path, value, and other information.
@@ -79,7 +78,10 @@ class SequenceItem(object):
             else:
                 return path_delimiter
 
-        raise NotImplementedError('Not sure how to handle this situation')
+        raise NotImplementedError(
+            'Path: "{path}" could not be split using, "{opt}". Not sure how to '
+            'handle this situation.'.format(
+                path=self.path, opt=self._path_delimiter_choices))
 
     @classmethod
     def _path_delimiter_choices(cls):
@@ -339,8 +341,7 @@ class SequenceItem(object):
             Sequence: The sequence that was automatically created.
 
         '''
-        # TODO : Make relative
-        import sequencer
+        from . import sequencer
 
         def replace_digit_with_hash(match):
             '''str: Some varying number of '#' for match. Match must be > 0.'''

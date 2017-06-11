@@ -26,7 +26,6 @@ from . import conversion
 from .core import check
 
 
-
 class Range(object):
 
     # Note:
@@ -119,9 +118,11 @@ class Sequence(collections.MutableSequence):
 
         '''
         def get_format_info_hash(padding, length):
+            '''list[str]: The items to fill in for some format.'''
             return ['#' * padding] * length
 
         def get_format_info_glob(padding, length):
+            '''list[str]: The items to fill in for some format.'''
             return ['*'] * length
 
         super(Sequence, self).__init__()
@@ -132,7 +133,6 @@ class Sequence(collections.MutableSequence):
             # a sequence using that info
             #
             items = [self.get_sequence_item(item) for item in template]
-            paddings = [item.get_padding() for item in items]
             has_consistent_padding = all([item.get_padding() for item in items])
 
             example_item = items[0]
@@ -273,13 +273,6 @@ class Sequence(collections.MutableSequence):
                 The object given to this function or a new, created instance.
 
         '''
-        if isinstance(value, (self.get_sequence_item_class(), self.__class__)):
-            return value
-
-        value = check.force_itertype(value)
-
-        format_path = self.get_format_path()
-
         def get_item_using_format(format_path, values):
             '''Create a sequence item object using some format path and values.
 
@@ -344,11 +337,17 @@ class Sequence(collections.MutableSequence):
             value = [int(value_) for value_ in value]
             return get_item_using_format(format_path, value)
 
+        if isinstance(value, (self.get_sequence_item_class(), self.__class__)):
+            return value
+
+        value = check.force_itertype(value)
+        format_path = self.get_format_path()
+
         strategies = [
             get_item_using_format,
             get_item_using_path,
             get_item_from_str_value,
-            ]
+        ]
 
         for strategy in strategies:
             item = strategy(format_path, value)
@@ -639,9 +638,6 @@ class Sequence(collections.MutableSequence):
         for item in self:
             item.set_padding(value, position)
 
-        # Now we need to change the padding on our template
-        format_path = self.get_format_path()
-
         some_item = self.items[0]  # Doesn't matter which item we use
 
         value, position = some_item._conform_value_iterable(
@@ -667,6 +663,19 @@ class Sequence(collections.MutableSequence):
         self.template = ''.join(final_template)
 
     def set_type(self, as_type, padding=None):
+        '''Change the type of this sequence to the given type.
+
+        Args:
+            as_type (str):
+                The type to change to.
+                Options: ('angular', 'dollar_f', 'glob', 'percent', 'hash').
+            padding (:obj:`int`, optional):
+                If you change from a padding-insensitive type (like glob)
+                to one that is padding-sensitive, you must padding to change
+                over to. Otherwise, padding is completely optional and just
+                functions like set_padding().
+
+        '''
         repr_sequence = conversion.REPR_SEQUENCES[as_type]
         if self.repr_sequence['padding_case'] == 'insensitive' \
                 and repr_sequence['padding_case'] == 'sensitive' \
@@ -723,7 +732,7 @@ class Sequence(collections.MutableSequence):
         Returns:
             bool: If the given sequence is a subset of this object and
                   the sequences have no overlapping items, return True.
- \
+
         '''
         is_contained = not self < sequence \
             and not self > sequence \
@@ -1338,12 +1347,44 @@ def split_using_subitems(base, subitems, include_subitems=False):
 
 
 def indent(text, prefix, predicate=None):
+    '''Indent the lines of text by some amount.
+
+    This method is just a convenience method to implement textwrap.indent for
+    all Python version < 3.3. Its interface/functionality is identical to
+    the standard library function.
+
+    Args:
+        text (str): The text to indent.
+        prefix (str): The string to indent each line in text.
+        predicate (callable[str]):
+            A function to determine whether to indent some function.
+            If no function is given, a default function will be given which
+            will indent every line.
+
+    Returns:
+        str: The indented text.
+
+    '''
     try:
-        import textwrap
-        function = textwarp.indent
-    except (NameError, ImportError):
+        function = textwrap.indent
+    except AttributeError:
         def _indent(text, prefix, predicate=None):
+            '''A fake implementation of textwrap.indent.
+
+            Args:
+                text (str): The text to indent.
+                prefix (str): The string to indent each line in text.
+                predicate (callable[str]):
+                    A function to determine whether to indent some function.
+                    If no function is given, a default function will be given
+                    which will indent every line.
+
+            Returns:
+                str: The indented text.
+
+            '''
             def _should_indent(line):
+                '''True: Always indent.'''
                 return True
 
             if predicate is None:

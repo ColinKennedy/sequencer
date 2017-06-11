@@ -62,8 +62,9 @@ def get_items_dollar_f(path):
 
 
 def get_value_dollar_f(item):
+    r'''int: The padding of some $F\d string.'''
     dollar_f_regex = r'\$F(\d+)?'
-    match = re.match(dollar_f_repr)
+    match = re.match(dollar_f_regex)
     if match is None:
         return 0
     return int(match.group(1))
@@ -91,6 +92,7 @@ def get_items_glob(path):
 
 
 def get_value_glob(item):
+    '''NoneType: The padding of some string glob.'''
     return None
 
 
@@ -123,6 +125,7 @@ def get_items_percent(path):
 
 
 def get_value_percent(item):
+    r'''int: The padding of some %0\d percent string.'''
     percent_regex = r'(%(?P<value>\d+)d)'
     match = re.match(percent_regex, item)
     if match is None:
@@ -154,6 +157,7 @@ def get_items_hash(path):
 
 
 def get_value_hash(item):
+    '''int: The padding of some #### hash string.'''
     return item.count('#')
 
 
@@ -185,8 +189,9 @@ def get_padding(path):
 # Reference: http://www.stackoverflow.com/questions/19022686
 #
 import collections
-class ReadOnlyDict(collections.Mapping):
 
+
+class ReadOnlyDict(collections.Mapping):
     def __init__(self, data):
         self._data = data
 
@@ -212,15 +217,13 @@ class ProtectedDict(dict):
         self.__readonly = bool(allow)
 
     def __setitem__(self, key, value):
-
         if self.__readonly:
-            raise TypeError, "__setitem__ is not supported"
+            raise TypeError('__setitem__ is not supported')
         return dict.__setitem__(self, key, value)
 
     def __delitem__(self, key):
-
         if self.__readonly:
-            raise TypeError, "__delitem__ is not supported"
+            raise TypeError('__delitem__ is not supported')
         return dict.__delitem__(self, key)
 
 
@@ -290,6 +293,7 @@ def get_items_angular(path):
 
 
 def get_value_angular(item):
+    '''NoneType: The padding of some <fnum> angular string.'''
     return None
 
 
@@ -336,17 +340,6 @@ REPR_SEQUENCES = ReadOnlyDict({
             'padding_case': 'insensitive',
         }),
 
-    'percent':
-        ReadOnlyDict({
-            'is_valid': is_percent,
-            'get_value': get_value_percent,
-            'items': get_items_percent,
-            'make': make_percent,
-            'to_format': to_format_percent,
-            'type': 'percent',
-            'padding_case': 'sensitive',
-        }),
-
     'hash':
         ReadOnlyDict({
             'is_valid': is_hash,
@@ -355,6 +348,17 @@ REPR_SEQUENCES = ReadOnlyDict({
             'make': make_hash,
             'to_format': to_format_from_hash,
             'type': 'hash',
+            'padding_case': 'sensitive',
+        }),
+
+    'percent':
+        ReadOnlyDict({
+            'is_valid': is_percent,
+            'get_value': get_value_percent,
+            'items': get_items_percent,
+            'make': make_percent,
+            'to_format': to_format_percent,
+            'type': 'percent',
             'padding_case': 'sensitive',
         }),
 })
