@@ -22,6 +22,7 @@ from six.moves import range
 from . import sequencer_item
 from . import udim_iterator
 from .core import grouping
+from .core import textcase
 from . import conversion
 from .core import check
 
@@ -1067,7 +1068,7 @@ class Sequence(collections.MutableSequence):
             if index == 0:
                 reprs[index] = str(item)
             else:
-                reprs[index] = indent(item, '        ' * self.INDENT)
+                reprs[index] = textcase.indent(item, '        ' * self.INDENT)
 
         repr_output = repr_output.format(
             cls_=self.__class__.__name__,
@@ -1344,56 +1345,6 @@ def split_using_subitems(base, subitems, include_subitems=False):
                 final_split.append()
 
     return tuple(final_split)
-
-
-def indent(text, prefix, predicate=None):
-    '''Indent the lines of text by some amount.
-
-    This method is just a convenience method to implement textwrap.indent for
-    all Python version < 3.3. Its interface/functionality is identical to
-    the standard library function.
-
-    Args:
-        text (str): The text to indent.
-        prefix (str): The string to indent each line in text.
-        predicate (callable[str]):
-            A function to determine whether to indent some function.
-            If no function is given, a default function will be given which
-            will indent every line.
-
-    Returns:
-        str: The indented text.
-
-    '''
-    try:
-        function = textwrap.indent
-    except AttributeError:
-        def _indent(text, prefix, predicate=None):
-            '''A fake implementation of textwrap.indent.
-
-            Args:
-                text (str): The text to indent.
-                prefix (str): The string to indent each line in text.
-                predicate (callable[str]):
-                    A function to determine whether to indent some function.
-                    If no function is given, a default function will be given
-                    which will indent every line.
-
-            Returns:
-                str: The indented text.
-
-            '''
-            def _should_indent(line):
-                '''True: Always indent.'''
-                return True
-
-            if predicate is None:
-                predicate = _should_indent
-
-            return ''.join([prefix + line if predicate(line) else line
-                            for line in text.splitlines(True)])
-        function = _indent
-    return function(text, prefix, predicate)
 
 
 if __name__ == '__main__':
