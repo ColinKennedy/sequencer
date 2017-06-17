@@ -383,6 +383,19 @@ def get_repr_container(sequence):
             return repr_type_info
 
 
+def get_dimensions(name):
+    '''Get the number of digit-areas of a sequence that can be incremented.
+
+    Args:
+        name (str): Some sequence, like '/some/thing_u{}_v{}.tif'.
+
+    Returns:
+        int: The number of places where digit-format-areas were found.
+
+    '''
+    return len(re.findall(FORMAT_REGEX_STR, name))
+
+
 if __name__ == '__main__':
     print(__doc__)
 

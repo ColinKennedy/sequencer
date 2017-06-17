@@ -181,7 +181,10 @@ class Sequence(collections.MutableSequence):
         start = self.get_start()
         end = self.get_end()
 
-        if not start and not end:
+        if not start and not end or \
+                (check.is_itertype(start) and check.is_itertype(end) and
+                 all(dimension == 0 for dimension in start) and
+                 all(dimension == 0 for dimension in end)):
             return []
 
         range_iterator = self._items_iterator(start, end)
@@ -694,8 +697,7 @@ class Sequence(collections.MutableSequence):
         # based on this object's existing template
         #
         formatted_repr = self.repr_sequence['to_format'](self.template)
-        number_of_dimensions = \
-            len(re.findall(conversion.FORMAT_REGEX_STR, formatted_repr))
+        number_of_dimensions = conversion.get_dimensions(formatted_repr)
         fake_values = [0] * number_of_dimensions
         some_item = self.get_sequence_item(formatted_repr.format(*fake_values))
 
