@@ -167,10 +167,6 @@ class Sequence(collections.MutableSequence):
 
         self.repr_sequence = conversion.get_repr_container(template)
 
-        if (not start and not end) or start == end:
-            self.items = []
-            return
-
         self.start_item = \
             self.get_sequence_item(
                 self.repr_sequence['to_format'](self.template).format(*start))
@@ -182,7 +178,13 @@ class Sequence(collections.MutableSequence):
 
     def get_range_items(self):
         '''list[SequenceItem]: Using this object's start/end, create a range.'''
-        range_iterator = self._items_iterator(self.get_start(), self.get_end())
+        start = self.get_start()
+        end = self.get_end()
+
+        if not start and not end:
+            return []
+
+        range_iterator = self._items_iterator(start, end)
         # We need to += 1 because a traditional range doesn't return the last
         # element of a sequence but, in our case, we want it as the default
         # behavior
