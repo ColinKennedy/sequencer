@@ -18,7 +18,7 @@ import re
 import six
 
 
-FORMAT_REGEX_STR = r'\{(?:\w+)?:(\d+)d\}'
+FORMAT_REGEX_STR = r'\{(?:(?:\w+)?:(?:(\d+)d)?)?\}'
 
 
 def replace_formatted_digits(match):

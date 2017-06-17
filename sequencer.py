@@ -690,7 +690,15 @@ class Sequence(collections.MutableSequence):
         if repr_sequence['type'] == self.repr_sequence['type']:
             return  # Nothing to do
 
-        some_item = self.items[0]  # Doesn't matter which item we use
+        # Doesn't matter what the item is, so we just create a fake one
+        # based on this object's existing template
+        #
+        formatted_repr = self.repr_sequence['to_format'](self.template)
+        number_of_dimensions = \
+            len(re.findall(conversion.FORMAT_REGEX_STR, formatted_repr))
+        fake_values = [0] * number_of_dimensions
+        some_item = self.get_sequence_item(formatted_repr.format(*fake_values))
+
         non_digits = some_item.get_non_digits()
 
         # '/some/template.####.tif' -> ['/some/path.', '####', '.tif']
