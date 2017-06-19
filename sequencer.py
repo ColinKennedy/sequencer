@@ -542,7 +542,8 @@ class Sequence(collections.MutableSequence):
 
     def get_dimensions(self):
         '''int: The number of ways that this sequence can increment.'''
-        return self.items[0].get_dimensions()
+        formatted_repr = self.repr_sequence['to_format'](self.template)
+        return conversion.get_dimensions(formatted_repr)
 
     def get_start(self, mode='value', recursive=False):
         '''Get the lowest value of this sequence, or its parent object.
