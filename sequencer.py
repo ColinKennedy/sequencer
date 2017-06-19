@@ -12,11 +12,11 @@ for a sequence is 3 consecutive items.
 import collections
 import functools
 import textwrap
-import six
 import re
 
 # IMPORT THIRD-PARTY LIBRARIES
 from six.moves import range
+import six
 
 # IMPORT LOCAL LIBRARIES
 from . import sequencer_item
@@ -128,6 +128,9 @@ class Sequence(collections.MutableSequence):
 
         super(Sequence, self).__init__()
 
+        is_empty_sequence = start == 0 and end == 0 and \
+            isinstance(template, six.string_types)
+
         if not isinstance(template, six.string_types):
             # assuming these are sequence items, we need to create a valid
             # sequence template for these items, get its range, and create
@@ -157,22 +160,25 @@ class Sequence(collections.MutableSequence):
         if start > end:
             start, end = end, start
 
-        # As a precaution, in case this template is a 2D sequence (like a UDIM)
-        # wrap all start/end values into lists
+        self.template = template
+        self.repr_sequence = conversion.get_repr_container(self.template)
+
+        formatted_template = self.repr_sequence['to_format'](self.template)
+
+        if is_empty_sequence:
+            # Create some bogus values for start and end
+            dimensions = conversion.get_dimensions(formatted_template)
+            start = tuple(0 for item in range(dimensions))
+            end = tuple(0 for item in range(dimensions))
+
+        # As a precaution, in case this template is a 2D sequence
+        # (like a UDIM) wrap all start/end values into lists
         #
         start = check.force_itertype(start)
         end = check.force_itertype(end)
 
-        self.template = template
-
-        self.repr_sequence = conversion.get_repr_container(template)
-
-        self.start_item = \
-            self.get_sequence_item(
-                self.repr_sequence['to_format'](self.template).format(*start))
-        self.end_item = \
-            self.get_sequence_item(
-                self.repr_sequence['to_format'](self.template).format(*end))
+        self.start_item = self.get_sequence_item(formatted_template.format(*start))
+        self.end_item = self.get_sequence_item(formatted_template.format(*end))
 
         self.items = self.get_range_items()
 
@@ -1200,31 +1206,37 @@ def get_sequence_objects(file_paths, sort=sorted):
         sequence_item_objects[padded_format].append(item_path)
 
     sequences = []
-
+    sequence_collector = dict()
     # TODO : TBD I split these two loops up to make the code more bearable but
     #        it is pretty inefficient. Maybe go back and optimize this, later
     #
     for sequence_format_path, paths in sequence_item_objects.items():
         paths = [sequencer_item.SequenceItem(path) for path in paths]
         hash_path = conversion.to_hash_from_format(sequence_format_path)
+        sequence_collector.setdefault(hash_path, dict())
         sequence = None
+        for path in paths:
+            padding = path.get_padding()
+            try:
+                # If the sequence is multi-dimensional, we have to convert it
+                # to a tuple because lists can't be dict keys
+                padding = tuple(padding)
+            except TypeError:
+                pass
 
-        for group in grouping.ranges(
-                [path.get_value() for path in paths], return_range=False):
-            if isinstance(group, int):
-                sequences.append(sequencer_item.SequenceItem(paths[0].path))
-                continue
+            sequence_collector[hash_path].setdefault(padding, list())
+            sequence_collector[hash_path][padding].append(path)
 
-            start_value = group[0]
-            end_value = group[1]
-            sequence_ = Sequence(hash_path, start_value, end_value)
-
-            if sequence is None:
-                sequence = sequence_
+    for path, path_info in sequence_collector.items():
+        for padding, items in path_info.items():
+            if len(items) < 2:
+                sequence_object = sequencer_item.SequenceItem(path)
             else:
-                sequence.add_in_place(sequence_)
+                sequence_object = Sequence(path)
+                for item in items:
+                    sequence_object.add_in_place(item)
 
-        sequences.append(sequence)
+            sequences.append(sequence_object)
 
     return sequences
 

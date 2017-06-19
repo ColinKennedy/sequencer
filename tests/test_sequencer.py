@@ -1272,6 +1272,17 @@ class MakeSequenceTestCase(unittest.TestCase):
                 '/some/other/path/another_file_name.1003.tif',
                 '/some/other/path/another_file_name.1004.tif',
 
+                # a 2D sequence
+                '/some/2d/sequence_u3_v6.tif',
+                '/some/2d/sequence_u3_v7.tif',
+                '/some/2d/sequence_u3_v8.tif',
+                '/some/2d/sequence_u3_v9.tif',
+                '/some/2d/sequence_u4_v0.tif',
+                '/some/2d/sequence_u4_v1.tif',
+                '/some/2d/sequence_u4_v2.tif',
+                '/some/2d/sequence_u4_v3.tif',
+                '/some/2d/sequence_u4_v4.tif',
+
                 # a single item (no sequence)
                 '/single/item.1001.tif',
             ]
@@ -1282,11 +1293,11 @@ class MakeSequenceTestCase(unittest.TestCase):
         sequence_items = [item for item in sequence_objects
                           if isinstance(item, SequenceItem)]
 
-        self.assertEqual(len(sequences), 4)
+        self.assertEqual(len(sequences), 5)
         self.assertEqual(len(sequence_items), 1)
 
     def test_build_sequence_from_files_adapter(self):
-        '''Create a way to make a sequence using just a list of file paths.'''
+        '''Initialize a Sequence object using only a list of files.'''
         some_file_paths = \
             [
                 # a discontinuous sequence
