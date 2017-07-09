@@ -8,7 +8,7 @@ import random
 import sys
 
 # IMPORT LOCAL LIBRARIES
-import udim_iterator
+import sequencer.udim_iterator
 
 
 class ExpectingTestCase(unittest.TestCase):

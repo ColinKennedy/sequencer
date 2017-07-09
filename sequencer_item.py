@@ -13,11 +13,9 @@ from cached_property import cached_property
 from six.moves import range
 
 # IMPORT LOCAL LIBRARIES
-# TODO : Make relative
-from core import check
+from .core import check
 
 
-# TODO : Make __repr__ for SequenceItem, Sequence, and nested Sequence
 class SequenceItem(object):
 
     '''An item of a sequence. It contains a path, value, and other information.
@@ -80,7 +78,10 @@ class SequenceItem(object):
             else:
                 return path_delimiter
 
-        raise NotImplementedError('Not sure how to handle this situation')
+        raise NotImplementedError(
+            'Path: "{path}" could not be split using, "{opt}". Not sure how to '
+            'handle this situation.'.format(
+                path=self.path, opt=self._path_delimiter_choices))
 
     @classmethod
     def _path_delimiter_choices(cls):
@@ -93,7 +94,7 @@ class SequenceItem(object):
         '''
         return (r'(\.)(\d+)', r'(_[uv])(\d+)')
 
-    def __split_delimiter(self, path):
+    def _split_delimiter(self, path):
         '''Find the correct method to split the path into digits and split it.
 
         Note:
@@ -115,38 +116,6 @@ class SequenceItem(object):
 
         return tuple(split_by_group(path, self.path_delimiter))
 
-        # # I can't figure out how to get what I want so I made this ghetto thing
-        # # This should definitely be optimized
-        # # example: self.path = '/some/path_u1_v2.tif' ->
-        # #                      ['/some/path_u', '1', '_v', '2', '.tif']
-        # #
-        # # TODO : Make this method less magical
-        # #
-        # split_items = []
-        # for match in self.path_delimiter.finditer(path):
-        #     split_items.extend(match.groups())
-
-        # final_split = []
-        # split_items_len = len(split_items)
-        # last_end = None
-        # for index, item in enumerate(split_items):
-        #     starting_index = path.index(item)
-
-        #     if index == 0:
-        #         final_split.append(path[:starting_index])
-
-        #     if last_end is not None and starting_index != last_end:
-        #         final_split.append(path[last_end:starting_index])
-
-        #     ending_index = starting_index + len(item)
-        #     last_end = ending_index
-        #     final_split.append(path[starting_index:ending_index])
-
-        #     if index + 1 == split_items_len:
-        #         final_split.append(path[ending_index:])
-
-        # return tuple(final_split)
-
     def has_matching_path_template(self, path):
         '''bool: If this object and the path have the same root path.'''
         current_root_path = os.path.dirname(self.path)
@@ -158,10 +127,43 @@ class SequenceItem(object):
         return current_root_path == other_root_path \
             and self.get_formatted_path() == other_formatted_path
 
+    def get_parts(self, as_type=int):
+        '''Get the digit and non-digit parts of this item.
+
+        Args:
+            as_type (callable): A function to run on the found digits in parts.
+                                Default: int wrapper function.
+
+        Returns:
+            tuple[tuple[str], tuple[int]]: The non-digit parts and digit parts.
+
+        '''
+        digits = []
+        non_digits = []
+        for part in self._split_delimiter(self.path):
+            if part.isdigit():
+                digits.append(as_type(part))
+            else:
+                non_digits.append(part)
+
+        return (tuple(non_digits), tuple(digits))
+
     def get_digits(self, as_type=int):
-        '''tuple[as_type]: The digits of this path.'''
-        return tuple(as_type(item) for item in self.__split_delimiter(self.path)
-                     if item.isdigit())
+        '''Get only the digits in this object instance.
+
+        Args:
+            as_type (callable): A function to run on the found digits in parts.
+                                Default: int wrapper function.
+
+        Returns:
+            tuple[as_type]: The digits of this path.
+
+        '''
+        return self.get_parts(as_type=as_type)[1]
+
+    def get_non_digits(self):
+        '''tuple[str]: Get the parts of this instance that are not digits.'''
+        return self.get_parts()[0]
 
     def get_formatted_path(self):
         '''Get the current path, in a Python-format-style string.
@@ -174,18 +176,24 @@ class SequenceItem(object):
             str: The formatted path.
 
         '''
-        return '{}'.join(
-            [item for item in self.__split_delimiter(self.path)
-             if not item.isdigit()])
+        return '{}'.join(self.get_non_digits())
 
     def get_dimensions(self):
         '''int: The number of varying digits in the path.'''
-        return len([item for item in self.__split_delimiter(self.path)
+        return len([item for item in self._split_delimiter(self.path)
                     if item.isdigit()])
 
     def get_value(self):
-        '''int or list[int]: The sequence value that this object represents.'''
-        digits = self.__split_delimiter(os.path.basename(self.path))
+        '''Get the stored digit(s) on this object.
+
+        Raises:
+            If no digits were found.
+
+        Returns:
+            int or list[int]: The sequence value that this object represents.
+
+        '''
+        digits = self._split_delimiter(os.path.basename(self.path))
         digits = [int(value) for value in digits if value.isdigit()]
 
         if not digits:
@@ -196,12 +204,18 @@ class SequenceItem(object):
             return digits[0]
         return list(digits)
 
-    def set_value(self, value, position=None):
-        '''Change the value of this item and its path representation.
+    def _conform_value_iterable(self, value, position):
+        '''Force the value to work with positions.
+
+        Since items can be 1D or multi-dimensioned, value and position may
+        or may not need to be iterable (It the item is 1D, it doesn't but if
+        it's 2D, it needs to be iterable).
+
+        Basically, this is a convenience method.
 
         Args:
             value (int or tuple[int]): The value(s) to change on this path.
-            position (int or tuple[int]): The index(es) which each value changes.
+            position (int or tuple[int]): The index(es) which each value change.
 
         Raises:
             ValueError:
@@ -209,24 +223,93 @@ class SequenceItem(object):
                 and no position was given or the value given doesn't match the
                 dimensions, we can't reasonably guess what to set the value to.
 
+        Returns:
+            tuple[list[int], list[int]]: The iterable values and positions.
+
         '''
-        value = check.force_itertype(value)
+        value, position = make_value_position_iterable(
+            value, position, dimensions=self.get_dimensions())
+        return (value, position)
 
-        if position is None:
-            position_ = [position_ for position_ in range(len(value))]
-        else:
-            position_ = check.force_itertype(position)
+    def get_padding(self, position=None):
+        '''Get the padding of some point of this item.
 
-        if position is None and len(value) != self.get_dimensions():
-            raise ValueError('Value: "{val}" is invalid. You must specify an '
-                             'index or give "{dim}" values, at once.'
-                             ''.format(val=value, dim=self.get_dimensions()))
+        If this item is multi-dimensional and position is not given, every
+        padding position is returned.
 
-        parts = self.__split_delimiter(self.path)
+        Args:
+            position (int or tuple[int]): The index(es) which each value change.
+
+        Returns:
+            int or tuple[int]: The padding at each digit on this item.
+                               If the seqeuence is one dimensional, the value
+                               that returns is not iterable.
+
+        '''
+        parts = self._split_delimiter(self.path)
+        digit_parts = [len(part) for part in parts if part.isdigit()]
+
+        if self.get_dimensions() == 1:
+            if position is None:
+                position = 0
+
+            return digit_parts[position]  # Note: early return
+
+        digit_parts, position = self._conform_value_iterable(
+            digit_parts, position)
+
+        paddings = []
+        for position_ in position:
+            paddings.append(digit_parts[position_])
+
+        return tuple(paddings)
+
+    def set_padding(self, value, position):
+        '''Change the padding(s) on this item, using values and positions.
+
+        Args:
+            value (int or tuple[int]): The value(s) to set padding on this path.
+            position (int or tuple[int]): The index(es) which each value change.
+
+        '''
+        paddings = self.get_padding()
+        paddings = check.force_itertype(paddings)  # Returns a list - important
+
+        value, position = self._conform_value_iterable(
+            value, position)
+
+        for value_, position_ in itertools.izip(value, position):
+            paddings[position_] = value_
+
+        parts = self._split_delimiter(self.path)
+        digit_parts = [int(part) for part in parts if part.isdigit()]
+
+        padding_digits = []
+        for padding, digit in itertools.izip(paddings, digit_parts):
+            padding_digits.append(str(digit).zfill(padding))
+
+        self.path = self.get_formatted_path().format(*padding_digits)
+
+    def set_value(self, value, position=None):
+        '''Change the value of this item and its path representation.
+
+        If a value is 10 and the position is 0, the 0th digit on this item
+        will be set with the number 1. If value is 13 and position is 1 and this
+        item is 2-dimensional, the 1st digit position will be set to 13.
+
+        Args:
+            value (int or tuple[int]): The value(s) to change on this path.
+            position (int or tuple[int]): The index(es) which each value change.
+
+        '''
+        value, position = self._conform_value_iterable(
+            value, position)
+
+        parts = self._split_delimiter(self.path)
         non_digit_parts = [None if part.isdigit() else part for part in parts]
         digit_parts = [part for part in parts if part.isdigit()]
 
-        for position_, value_ in itertools.izip(position_, value):
+        for position_, value_ in itertools.izip(position, value):
             # Note: This assumes that there is padding on image
             padding = '{:0' + str(len(digit_parts[position_])) + 'd}'
             digit_parts[position_] = padding.format(value_)
@@ -258,10 +341,9 @@ class SequenceItem(object):
             Sequence: The sequence that was automatically created.
 
         '''
-        # TODO : Make relative
-        import sequencer
+        from . import sequencer
 
-        def replace_digit_with_pound(match):
+        def replace_digit_with_hash(match):
             '''str: Some varying number of '#' for match. Match must be > 0.'''
             return '#' * len(match.group(1))
 
@@ -281,7 +363,7 @@ class SequenceItem(object):
         # Note: This assumes that the path(s) are padding sensitive. This may
         #       cause issues in the future.
         #
-        formatted_path = re.sub(r'(\d+)', replace_digit_with_pound, self.path)
+        formatted_path = re.sub(r'(\d+)', replace_digit_with_hash, self.path)
         return sequencer.Sequence(formatted_path, start=start_item.get_value(),
                                   end=end_item.get_value())
 
@@ -293,6 +375,39 @@ class SequenceItem(object):
         '''str: The code needed to re-create this object.'''
         return "{name}('{path}')".format(name=self.__class__.__name__,
                                          path=self.path)
+
+
+def make_value_position_iterable(value, position, dimensions):
+    '''Force the value to work with positions.
+
+    Args:
+        value (int or tuple[int]): The value(s) to change on this path.
+        position (int or tuple[int]): The index(es) which each value change.
+        dimensions (int): The max length that value and position can be.
+
+    Raises:
+        ValueError:
+            If this object is multi-dimensional (2+ dimensions, like a UDIM)
+            and no position was given or the value given doesn't match the
+            dimensions, we can't reasonably guess what to set the value to.
+
+    Returns:
+        tuple[list[int], list[int]]: The iterable values and positions.
+
+    '''
+    value = check.force_itertype(value)
+
+    if position is None:
+        position_ = [position_ for position_ in range(len(value))]
+    else:
+        position_ = check.force_itertype(position)
+
+    if position is None and len(value) != dimensions:
+        raise ValueError('Value: "{val}" is invalid. You must specify an '
+                         'index or give "{dim}" values, at once.'
+                         ''.format(val=value, dim=dimensions))
+
+    return (value, position_)
 
 
 if __name__ == '__main__':

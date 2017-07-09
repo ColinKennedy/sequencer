@@ -5,14 +5,15 @@
 
 # IMPORT STANDARD LIBRARIES
 import tempfile
+import textwrap
 import unittest
 import shutil
 import os
 
 # IMPORT LOCAL LIBRARIES
-from sequencer import (Sequence, SequenceMultiDimensional,
-                       get_sequence_objects)
-from sequencer_item import SequenceItem
+from sequencer.sequencer import (Sequence, SequenceMultiDimensional,
+                                 get_sequence_objects)
+from sequencer.sequencer_item import SequenceItem
 
 
 ALL_TEMP_FILES_FOLDERS = set()
@@ -77,6 +78,26 @@ class ItemMethodTestCase(unittest.TestCase):
         else:
             self.assertTrue(False)
 
+    def test_get_padding_implied_position(self):
+        '''Request the padding of the only digit in a sequence.'''
+        item = SequenceItem('/something/some_file.1001.tif')
+        self.assertEqual(item.get_padding(), 4)
+
+    def test_get_padding_explicit_position(self):
+        '''Request the padding of the only digit in a sequence, explicitly.'''
+        item = SequenceItem('/something/some_file.1001.tif')
+        self.assertEqual(item.get_padding(0), 4)
+
+    def test_get_padding_implicit_position_multi(self):
+        '''Get the padding of a 2D sequence item, at once.'''
+        item = SequenceItem('/something/some_file.100004.1001.tif')
+        self.assertEqual(item.get_padding(), (6, 4))
+
+    def test_get_padding_explicit_position_multi(self):
+        '''Get the padding of a 2D sequence item, at once.'''
+        item = SequenceItem('/something/some_file.100004.1001.tif')
+        self.assertEqual(item.get_padding([0, 1]), (6, 4))
+
     def test_set_value_int(self):
         '''Set the value of SequenceItem with an int.
 
@@ -118,82 +139,172 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 
     '''Tests where a sequence's representation type gets changed to another.'''
 
-    pass
+    def test_convert_angular_to_angular(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.<fnum>.tif'.'''
+        angular_repr = '/a/path/image_padded.<fnum>.tif'
+        sequence = Sequence(angular_repr, start=10, end=20)
 
-    # def test_convert_angular_to_angular(self):
-    #     pass
+        sequence.set_type('angular')
 
-    # def test_convert_angular_to_format(self):
-    #     pass
+        self.assertEqual(sequence.template, angular_repr)
 
-    # def test_convert_angular_to_glob(self):
-    #     pass
+    def test_convert_angular_to_glob(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/a/path/image_padded.<fnum>.tif',
+                            start=10, end=20)
 
-    # def test_convert_angular_to_percent(self):
-    #     pass
+        sequence.set_type('glob')
 
-    # def test_convert_angular_to_pound(self):
-    #     pass
+        self.assertEqual(sequence.template, '/a/path/image_padded.*.tif')
 
-    # def test_convert_format_to_angular(self):
-    #     pass
+    def test_convert_angular_to_percent(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.<fnum>.tif',
+                            start=10, end=20)
 
-    # def test_convert_format_to_format(self):
-    #     pass
+        sequence.set_type('percent', padding=4)
 
-    # def test_convert_format_to_glob(self):
-    #     pass
+        self.assertEqual(sequence.template, '/a/path/image_padded.%04d.tif')
 
-    # def test_convert_format_to_percent(self):
-    #     pass
+    def test_convert_angular_to_hash(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/a/path/image_padded.<fnum>.tif',
+                            start=10, end=20)
 
-    # def test_convert_format_to_pound(self):
-    #     pass
+        sequence.set_type('hash', padding=4)
 
-    # def test_convert_glob_to_angular(self):
-    #     pass
+        self.assertEqual(sequence.template, '/a/path/image_padded.####.tif')
 
-    # def test_convert_glob_to_format(self):
-    #     pass
+#     # def test_convert_format_to_angular(self):
+#     #     pass
 
-    # def test_convert_glob_to_glob(self):
-    #     pass
+#     # def test_convert_format_to_format(self):
+#     #     pass
 
-    # def test_convert_glob_to_percent(self):
-    #     pass
+#     # def test_convert_format_to_glob(self):
+#     #     pass
 
-    # def test_convert_glob_to_pound(self):
-    #     pass
+#     # def test_convert_format_to_percent(self):
+#     #     pass
 
-    # def test_convert_percent_to_angular(self):
-    #     pass
+#     # def test_convert_format_to_hash(self):
+#     #     pass
 
-    # def test_convert_percent_to_format(self):
-    #     pass
+    def test_convert_glob_to_angular(self):
+        '''Change from '/some/path.*.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
 
-    # def test_convert_percent_to_glob(self):
-    #     pass
+        sequence.set_type('angular')
 
-    # def test_convert_percent_to_percent(self):
-    #     pass
+        self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
 
-    # def test_convert_percent_to_pound(self):
-    #     pass
+#     # def test_convert_glob_to_format(self):
+#     #     pass
 
-    # def test_convert_pound_to_angular(self):
-    #     pass
+    def test_convert_glob_to_glob(self):
+        '''Change from '/some/path.*.tif' to '/some/path.*.tif'.'''
+        glob_repr = '/a/path/image_padded.*.tif'
+        sequence = Sequence(glob_repr, start=10, end=20)
 
-    # def test_convert_pound_to_format(self):
-    #     pass
+        sequence.set_type('glob')
 
-    # def test_convert_pound_to_glob(self):
-    #     pass
+        self.assertEqual(sequence.template, glob_repr)
 
-    # def test_convert_pound_to_percent(self):
-    #     pass
+    def test_convert_glob_to_percent(self):
+        '''Change from '/some/path.*.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
 
-    # def test_convert_pound_to_pound(self):
-    #     pass
+        sequence.set_type('percent', padding=4)
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.%04d.tif')
+
+    def test_convert_glob_to_hash(self):
+        '''Change from '/some/path.*.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
+
+        sequence.set_type('hash', padding=4)
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.####.tif')
+
+    def test_convert_percent_to_angular(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
+
+        sequence.set_type('angular')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
+
+#     # def test_convert_percent_to_format(self):
+#     #     pass
+
+    def test_convert_percent_to_glob(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
+
+        sequence.set_type('glob')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.*.tif')
+
+    def test_convert_percent_to_percent(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.%04d.tif'.'''
+        percent_repr = '/a/path/image_padded.%04d.tif'
+        sequence = Sequence(percent_repr, start=10, end=20)
+
+        sequence.set_type('percent')
+
+        self.assertEqual(sequence.template, percent_repr)
+
+    def test_convert_percent_to_hash(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
+
+        sequence.set_type('hash')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.####.tif')
+
+    def test_convert_hash_to_angular(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
+
+        sequence.set_type('angular')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
+
+#     # def test_convert_hash_to_format(self):
+#     #     pass
+
+    def test_convert_hash_to_glob(self):
+        '''Change from '/some/path.####.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
+
+        sequence.set_type('glob')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.*.tif')
+
+    def test_convert_hash_to_percent(self):
+        '''Change from '/some/path.####.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
+
+        sequence.set_type('percent')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.%04d.tif')
+
+    def test_convert_hash_to_percent_0001(self):
+        '''Change from '/some/path.####.tif' to '/some/path.%03d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
+
+        sequence.set_type('percent', padding=3)
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.%03d.tif')
+
+    def test_convert_hash_to_hash(self):
+        '''Change from '/some/path.####.tif' to '/some/path.####.tif'.'''
+        hash_repr = '/a/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
+
+        sequence.set_type('hash')
+
+        self.assertEqual(sequence.template, hash_repr)
 
 
 class SequenceConstructionTestCase(unittest.TestCase):
@@ -337,13 +448,26 @@ class SequenceConstructionTestCase(unittest.TestCase):
         self.assertEqual(sequence.get_end(), self.end)
 
     @clear_temp_files_folders
-    def test_0001_image_path_repr_pound(self):
+    def test_0001_image_path_repr_hash(self):
         '''Create a sequence from a str like /some/image_sequence.####.tif.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = self._make_sequence_range(pound_repr)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = self._make_sequence_range(hash_repr)
 
         self.assertEqual(sequence.get_start(), self.start)
         self.assertEqual(sequence.get_end(), self.end)
+
+    def test_0001_image_path_repr_dollar_f(self):
+        '''Create a sequence from a str like /some/image_sequence.$F4.tif.'''
+        dollar_f_repr = '/some/path/image_padded.$F4.tif'
+        sequence = self._make_sequence_range(dollar_f_repr)
+
+        self.assertEqual(sequence.get_start(), self.start)
+
+    def test_production_sequence(self):
+        '''Create a sequence from a real production path.'''
+        some_sequence = '/jobs/someJob_12351394332/shots/sh01/FYI_090/renders/colin-k/FYI_090_some_information.####.tif'
+        sequence = Sequence(some_sequence, start=1001, end=2001)
+        self.assertEqual(sequence.get_dimensions(), 1)
 
     # @clear_temp_files_folders
     # def test_0001_image_path_udim_mari(self):
@@ -386,41 +510,86 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_get_end_item(self):
         '''Check the get_end() method on a regular sequence.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=0, end=100)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=100)
         self.assertEqual(sequence.get_end(), 100)
 
     def test_get_end_with_nested_sequence(self):
         '''Check get_end() method on a sequence with a sequence inside it.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=0, end=100)
-        sequence2 = Sequence(pound_repr, start=101, end=200)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=100)
+        sequence2 = Sequence(hash_repr, start=101, end=200)
         sequence.add_in_place(sequence2)
         self.assertEqual(sequence.get_end(), 200)
 
     def test_get_end_sequence_real(self):
         '''Make sure that we can get back a sequence object from get_end().'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=0, end=100)
-        sequence2 = Sequence(pound_repr, start=101, end=200)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=100)
+        sequence2 = Sequence(hash_repr, start=101, end=200)
         sequence.add_in_place(sequence2)
         self.assertEqual(sequence.get_end('real'), sequence2)
 
     def test_get_end_sequence_nested(self):
         '''Check get_end() on a complex, nested sequence.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=0, end=100)
-        sequence2 = Sequence(pound_repr, start=101, end=200)
-        sequence3 = Sequence(pound_repr, start=201, end=250)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=100)
+        sequence2 = Sequence(hash_repr, start=101, end=200)
+        sequence3 = Sequence(hash_repr, start=201, end=250)
         sequence2.add_in_place(sequence3)
         sequence.add_in_place(sequence2)
         self.assertEqual(sequence.get_end(), 250)
 
+    def test_set_padding(self):
+        '''Change the padding of a sequence object.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=10)
+        sequence.set_padding(3)
+
+        expected_items = [
+            '/some/path/image_padded.000.tif',
+            '/some/path/image_padded.001.tif',
+            '/some/path/image_padded.002.tif',
+            '/some/path/image_padded.003.tif',
+            '/some/path/image_padded.004.tif',
+            '/some/path/image_padded.005.tif',
+            '/some/path/image_padded.006.tif',
+            '/some/path/image_padded.007.tif',
+            '/some/path/image_padded.008.tif',
+            '/some/path/image_padded.009.tif',
+            '/some/path/image_padded.010.tif',
+        ]
+
+        self.assertEqual([item.path for item in sequence], expected_items)
+        self.assertEqual(sequence.template, '/some/path/image_padded.###.tif')
+
+    def test_set_padding_fail_0001(self):
+        '''Fail to set padding because the padding was too low.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=10)
+
+        try:
+            sequence.set_padding(1)
+        except ValueError:
+            pass
+        else:
+            self.assertFalse(True)
+
+    # def test_set_padding_multi(self):
+    #     '''Change the padding of a sequence object.'''
+    #     hash_repr = '/some/path/image_padded.####.####.tif'
+    #     sequence = Sequence(hash_repr, start=[0, 100], end=[300, 12])
+    #     sequence.set_padding(3, position=0)
+
+    #     raise ValueError(list(sequence))
+    #     self.assertEqual(sequence.template,
+    #                      '/some/path/image_padded.###.####.tif')
+
     def test_values_overlaps_matching(self):
         '''Two sequences whose ranges intersect at least once.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=0, end=100)
-        sequence2 = Sequence(pound_repr, start=20, end=100)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=0, end=100)
+        sequence2 = Sequence(hash_repr, start=20, end=100)
         self.assertTrue(sequence1.values_overlap(sequence2))
 
     def test_values_overlaps_not_matching_name(self):
@@ -442,8 +611,8 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_add_sequence_item_object(self):
         '''Add a SequenceItem to an existing Sequence.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=0, end=7)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=7)
 
         item = SequenceItem('/some/path/image_padded.0008.tif')
         sequence.add_in_place(item)
@@ -455,8 +624,8 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_add_sequence_item_object_changes_start(self):
         '''Check if a sequence updates when an added item changes its start.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=12, end=20)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=12, end=20)
 
         item = SequenceItem('/some/path/image_padded.0010.tif')
         sequence.add_in_place(item)
@@ -465,8 +634,8 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_add_sequence_item_object_changes_end(self):
         '''Check if a sequence updates when an added item changes its end.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=12, end=20)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=12, end=20)
 
         item = SequenceItem('/some/path/image_padded.0030.tif')
         sequence.add_in_place(item)
@@ -475,9 +644,9 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_add_sequence_object_fails_0001_overlap(self):
         '''Fail adding a sequence to a sequence if their items overlap.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=12, end=20)
-        sequence2 = Sequence(pound_repr, start=18, end=24)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=12, end=20)
+        sequence2 = Sequence(hash_repr, start=18, end=24)
 
         try:
             sequence1.add_in_place(sequence2)
@@ -497,9 +666,9 @@ class SequenceMethodTestCase(unittest.TestCase):
             (we do it here just for this test).
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=12, end=15)
-        sequence2 = Sequence(pound_repr, start=17, end=19)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=12, end=15)
+        sequence2 = Sequence(hash_repr, start=17, end=19)
 
         sequence1.items.append(sequence2)
 
@@ -523,9 +692,9 @@ class SequenceMethodTestCase(unittest.TestCase):
             (we do it here just for this test).
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
+        hash_repr = '/some/path/image_padded.####.tif'
 
-        sequence1 = Sequence(pound_repr)
+        sequence1 = Sequence(hash_repr)
         sequence1_items = [
             SequenceItem('/some/path/image_padded.0012.tif'),
             SequenceItem('/some/path/image_padded.0013.tif'),
@@ -534,7 +703,7 @@ class SequenceMethodTestCase(unittest.TestCase):
         for item in sequence1_items:
             sequence1.items.append(item)
 
-        sequence2 = Sequence(pound_repr)
+        sequence2 = Sequence(hash_repr)
         sequence2_items = [
             SequenceItem('/some/path/image_padded.0017.tif'),
             SequenceItem('/some/path/image_padded.0018.tif'),
@@ -548,6 +717,20 @@ class SequenceMethodTestCase(unittest.TestCase):
 
         self.assertEqual(list(sequence1.as_range('real')), expected_items)
 
+    def test_sequence_iteration_value(self):
+        '''Get the values of a sequence, in a simple function.'''
+        def get_value(item):
+            '''int: The value on some item.'''
+            return item.get_value()
+
+        hash_repr = '/some/path/image_padded.####.tif'
+        start = 10
+        end = 21
+        sequence = Sequence(hash_repr, start=start, end=end)
+
+        self.assertEqual([index for index in range(start, end + 1)],
+                         list(sequence.as_range('flat', function=get_value)))
+
     def test_sequence_iteration_add(self):
         '''Iterate over a sequence that contains items and another sequence.
 
@@ -555,9 +738,9 @@ class SequenceMethodTestCase(unittest.TestCase):
         is the correct way to add to the sequence.
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=12, end=15)
-        sequence2 = Sequence(pound_repr, start=17, end=19)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=12, end=15)
+        sequence2 = Sequence(hash_repr, start=17, end=19)
 
         sequence1.add_in_place(sequence2)
 
@@ -575,10 +758,10 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_sequence_iteration_flat_nested(self):
         '''Iterate over the sequence with nested sequences, within it.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=12, end=15)
-        sequence2 = Sequence(pound_repr, start=17, end=19)
-        sequence3 = Sequence(pound_repr, start=20, end=22)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=12, end=15)
+        sequence2 = Sequence(hash_repr, start=17, end=19)
+        sequence3 = Sequence(hash_repr, start=20, end=22)
 
         sequence2.add_in_place(sequence3)
         sequence1.add_in_place(sequence2)
@@ -607,8 +790,8 @@ class SequenceMethodTestCase(unittest.TestCase):
         as_range('flat').
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=20, end=22)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=20, end=22)
 
         expected_items = \
             ['/some/path/image_padded.0013.tif',
@@ -632,9 +815,9 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_sequence_set_range_0001(self):
         '''Practice changing the range of a sequence when adding another.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
-        sequence2 = Sequence(pound_repr, start=3, end=9)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=3, end=9)
 
         sequence1.add_in_place(sequence2)
 
@@ -643,8 +826,8 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_sequence_contains_sequence_item(self):
         '''Check is sequence contains some SequenceItem.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=10, end=20)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
 
         item = SequenceItem('/some/path/image_padded.0030.tif')
         sequence.add_in_place(item)
@@ -653,21 +836,21 @@ class SequenceMethodTestCase(unittest.TestCase):
         self.assertTrue(sequence.contains(item2))
 
 #     def test_sequence_dunder_contains_sequence(self):
-#         pound_repr = '/some/path/image_padded.####.tif'
-#         sequence = Sequence(pound_repr, start=10, end=20)
-#         sequence1 = Sequence(pound_repr, start=3, end=9)
+#         hash_repr = '/some/path/image_padded.####.tif'
+#         sequence = Sequence(hash_repr, start=10, end=20)
+#         sequence1 = Sequence(hash_repr, start=3, end=9)
 
 #         sequence.add_in_place(sequence1)
 
-#         sequence2 = Sequence(pound_repr, start=3, end=9)
+#         sequence2 = Sequence(hash_repr, start=3, end=9)
 
 #         self.assertTrue(sequence1 in sequence)
 #         self.assertFalse(sequence2 in sequence)
 
     def test_sequence_dunder_contains_sequence_item(self):
         '''Test that the dunder __contains__ method, to test for equivalency.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=10, end=20)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
 
         item = SequenceItem('/some/path/image_padded.0030.tif')
         sequence.add_in_place(item)
@@ -678,26 +861,26 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_add_sequence_object_dunder_contains(self):
         '''Check that a sequence can be found in another sequence.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
 
         item = SequenceItem('/some/path/image_padded.0030.tif')
         sequence1.add_in_place(item)
 
-        sequence2 = Sequence(pound_repr, start=21, end=29)
+        sequence2 = Sequence(hash_repr, start=21, end=29)
         sequence1.add_in_place(sequence2)
 
         self.assertTrue(sequence2 in sequence1)
 
     def test_sequence_check_fits(self):
         '''Test that two sequences can be combined together without overlap.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
 
         item = SequenceItem('/some/path/image_padded.0030.tif')
         sequence1.add_in_place(item)
 
-        sequence2 = Sequence(pound_repr, start=21, end=29)
+        sequence2 = Sequence(hash_repr, start=21, end=29)
         self.assertTrue(sequence2.fits(sequence1))
         self.assertTrue(sequence1.fits(sequence2))
 
@@ -708,19 +891,19 @@ class SequenceMethodTestCase(unittest.TestCase):
         start/end, it's said to be later.
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
-        sequence2 = Sequence(pound_repr, start=21, end=29)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=21, end=29)
 
-        self.assertTrue(sequence2.is_after(sequence1))
+        self.assertTrue(sequence2 > sequence1)
 
     def test_add_sequence_object_after_failed(self):
-        '''Make sure that is_after fails if Sequences contain any overlap.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
-        sequence2 = Sequence(pound_repr, start=19, end=29)
+        '''Make sure that > fails if Sequences contain any overlap.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=19, end=29)
 
-        self.assertFalse(sequence2.is_after(sequence1))
+        self.assertFalse(sequence2 > sequence1)
 
     def test_add_sequence_object_before(self):
         '''Determine which sequence comes earlier than the other sequence.
@@ -729,89 +912,39 @@ class SequenceMethodTestCase(unittest.TestCase):
         start/end, it's said to be later.
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
-        sequence2 = Sequence(pound_repr, start=21, end=29)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=21, end=29)
 
-        self.assertTrue(sequence1.is_before(sequence2))
+        self.assertTrue(sequence1 < sequence2)
 
     def test_add_sequence_object_before_failed(self):
-        '''Make sure that is_before fails if Sequences contain any overlap.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
-        sequence2 = Sequence(pound_repr, start=19, end=29)
+        '''Make sure that < fails if Sequences contain any overlap.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=19, end=29)
 
-        self.assertFalse(sequence1.is_before(sequence2))
+        self.assertFalse(sequence1 < sequence2)
 
     def test_sequence_has_str_path(self):
         '''Check if a string path exists in a sequence.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=0, end=100)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=100)
         self.assertTrue(sequence.has('/some/path/image_padded.0099.tif'))
 
-    def test_build_sequences_from_files(self):
-        '''Create a sequence from a list of files.
-
-        This list could be from a os.listdir() or some other method.
-
-        '''
-        some_file_paths = \
-            [
-                # a discontinuous sequence
-                '/some/path/file_name.1001.tif',
-                '/some/path/file_name.1002.tif',
-                '/some/path/file_name.1003.tif',
-                '/some/path/file_name.1004.tif',
-                '/some/path/file_name.1005.tif',
-
-                '/some/path/file_name.1006.tif',
-                '/some/path/file_name.1007.tif',
-                '/some/path/file_name.1008.tif',
-
-                # a continuous sequence
-                '/some/path/another_file_name.001009.tif',
-                '/some/path/another_file_name.001010.tif',
-                '/some/path/another_file_name.001011.tif',
-                '/some/path/another_file_name.001012.tif',
-
-                # another, continuous sequence with a different padding
-                '/some/path/another_file_name.1009.tif',
-                '/some/path/another_file_name.1010.tif',
-                '/some/path/another_file_name.1011.tif',
-                '/some/path/another_file_name.1012.tif',
-
-                # a sequence in different directory
-                '/some/other/path/another_file_name.1001.tif',
-                '/some/other/path/another_file_name.1002.tif',
-                '/some/other/path/another_file_name.1003.tif',
-                '/some/other/path/another_file_name.1004.tif',
-
-                # a single item (no sequence)
-                '/single/item.1001.tif',
-            ]
-
-        sequence_objects = get_sequence_objects(some_file_paths)
-        sequences = [item for item in sequence_objects
-                     if isinstance(item, Sequence)]
-        sequence_items = [item for item in sequence_objects
-                          if isinstance(item, SequenceItem)]
-
-        self.assertEqual(len(sequences), 4)
-        self.assertEqual(len(sequence_items), 1)
-
     # def test_sequence_has_str_int_padding_sensitive_false(self):
-    #     pound_repr = '/some/path/image_padded.####.tif'
-    #     sequence = Sequence(pound_repr, start=0, end=100)
+    #     hash_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(hash_repr, start=0, end=100)
     #     self.assertFalse(sequence.has('99'))
 
     # def test_sequence_has_str_int_padding_sensitive_true(self):
-    #     pound_repr = '/some/path/image_padded.####.tif'
-    #     sequence = Sequence(pound_repr, start=0, end=100)
+    #     hash_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(hash_repr, start=0, end=100)
     #     self.assertTrue(sequence.has('0099'))
 
     # def test_sequence_has_int_padding_insensitive(self):
-    #     pound_repr = '/some/path/image_padded.####.tif'
-    #     sequence = Sequence(pound_repr, start=0, end=100)
+    #     hash_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(hash_repr, start=0, end=100)
     #     self.assertTrue(sequence.has(99))
 
     # def test_add_sequence_item_str(self):
@@ -824,8 +957,8 @@ class SequenceMethodTestCase(unittest.TestCase):
         it to the sequence.
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=0, end=21)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=21)
         sequence.add_in_place(22)
 
         self.assertTrue(
@@ -833,9 +966,9 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_add_sequence_item_int_fails_0001(self):
         '''Make sure that items can be added to a sequence and retrieved.'''
-        pound_repr = '/some/path/image_padded.####.####.tif'
+        hash_repr = '/some/path/image_padded.####.####.tif'
         sequence = SequenceMultiDimensional(
-            pound_repr, start=[0, 0], end=[0, 10])
+            hash_repr, start=[0, 0], end=[0, 10])
         sequence.add_in_place([1, 12])
 
         self.assertFalse(sequence.contains(22))
@@ -844,22 +977,22 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_sequence_contains_str_path(self):
         '''Check if a path lives in a sequence, using only a string.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=10, end=22)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=22)
 
         image_path = '/some/path/image_padded.0022.tif'
         self.assertTrue(sequence.contains(image_path))
 
     # def test_sequence_contains_str_number_case_sensitive(self):
-    #     pound_repr = '/some/path/image_padded.####.tif'
-    #     sequence = Sequence(pound_repr, start=10, end=22)
+    #     hash_repr = '/some/path/image_padded.####.tif'
+    #     sequence = Sequence(hash_repr, start=10, end=22)
 
     #     self.assertFalse(sequence.contains('22'))
     #     self.assertTrue(sequence.contains('0022'))
 
     # def test_sequence_contains_str_number_case_insensitive(self):
-    #     pound_repr = '/some/path/image_padded.*.tif'
-    #     sequence = Sequence(pound_repr, start=10, end=22)
+    #     hash_repr = '/some/path/image_padded.*.tif'
+    #     sequence = Sequence(hash_repr, start=10, end=22)
 
     #     self.assertTrue(sequence.contains('22'))
     #     self.assertTrue(sequence.contains('0022'))
@@ -872,8 +1005,8 @@ class SequenceMethodTestCase(unittest.TestCase):
         about that.
 
         '''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence = Sequence(pound_repr, start=10, end=20)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
         self.assertTrue(sequence.contains(10))
         self.assertTrue(sequence.contains(20))
         self.assertFalse(sequence.contains(22))
@@ -883,10 +1016,10 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     def test_iterate_sequence_discontinuous(self):
         '''Iterate over a sequence that has sparse, disconnected elements.'''
-        pound_repr = '/some/path/image_padded.####.tif'
-        sequence1 = Sequence(pound_repr, start=10, end=20)
-        sequence2 = Sequence(pound_repr, start=35, end=37)
-        sequence3 = Sequence(pound_repr, start=40, end=42)
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=35, end=37)
+        sequence3 = Sequence(hash_repr, start=40, end=42)
 
         sequence1.add_in_place(sequence2)
         sequence1.add_in_place(sequence3)
@@ -931,6 +1064,253 @@ class SequenceMethodTestCase(unittest.TestCase):
 
     # def test_get_dimension_3d(self):
     #     pass
+
+
+class SequenceObjectPrintingTestCase(unittest.TestCase):
+
+    '''Test to make sure __repr__ and __str__ work, as expected.'''
+
+    def test_str_sequence_item(self):
+        '''Test the print of a regular sequence item.'''
+        item = SequenceItem('/some/path/image_padded.0001.tif')
+        self.assertTrue(str(item), "'/some/path/image_padded.0001.tif'")
+
+    def test_repr_sequence_item(self):
+        '''Test the repr of a regular sequence item.'''
+        item = SequenceItem('/some/path/image_padded.0001.tif')
+        self.assertTrue(repr(item),
+                        "SequenceItem('/some/path/image_padded.0001.tif')")
+
+    def test_str_sequence(self):
+        '''Test the print of a regular sequence.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
+
+        self.assertEqual(
+            str(sequence), '/some/path/image_padded.####.tif [10-20]')
+
+    def test_str_sequence_discontinuous(self):
+        '''Test the print of a sequence that has two broken sequences inside.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=35, end=42)
+
+        sequence1.add_in_place(sequence2)
+
+        self.assertEqual(
+            str(sequence1), '/some/path/image_padded.####.tif [10-20, 35-42]')
+
+    def test_str_sequence_complex_0001(self):
+        '''Test the print of a sequence with nested and individual elements.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=35, end=42)
+        sequence1.add_in_place(sequence2)
+
+        for index in range(22, 34, 2):
+            sequence1.add_in_place(index)
+
+        sequence1.add_in_place(100)
+
+        self.assertEqual(
+            str(sequence1),
+            '/some/path/image_padded.####.tif [10-20, 22-32x2, 35-42, 100]')
+
+    def test_repr_sequence(self):
+        '''Test the repr of a regular sequence.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
+
+        expected_output = \
+            '''\
+            Sequence(template='/some/path/image_padded.####.tif',
+                items=[
+                    SequenceItem('/some/path/image_padded.0010.tif'),
+                    SequenceItem('/some/path/image_padded.0011.tif'),
+                    SequenceItem('/some/path/image_padded.0012.tif'),
+                    SequenceItem('/some/path/image_padded.0013.tif'),
+                    SequenceItem('/some/path/image_padded.0014.tif'),
+                    SequenceItem('/some/path/image_padded.0015.tif'),
+                    SequenceItem('/some/path/image_padded.0016.tif'),
+                    SequenceItem('/some/path/image_padded.0017.tif'),
+                    SequenceItem('/some/path/image_padded.0018.tif'),
+                    SequenceItem('/some/path/image_padded.0019.tif'),
+                    SequenceItem('/some/path/image_padded.0020.tif'),
+                ]
+            )\
+            '''.rstrip()
+
+        expected_output = textwrap.dedent(expected_output)
+        self.assertEqual(repr(sequence), expected_output)
+
+    def test_repr_sequence_discontinuous(self):
+        '''Test the print of a sequence that has two broken sequences inside.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=35, end=37)
+
+        sequence1.add_in_place(sequence2)
+
+        expected_output = textwrap.dedent(
+        '''\
+        Sequence(template='/some/path/image_padded.####.tif',
+            items=[
+                SequenceItem('/some/path/image_padded.0010.tif'),
+                SequenceItem('/some/path/image_padded.0011.tif'),
+                SequenceItem('/some/path/image_padded.0012.tif'),
+                SequenceItem('/some/path/image_padded.0013.tif'),
+                SequenceItem('/some/path/image_padded.0014.tif'),
+                SequenceItem('/some/path/image_padded.0015.tif'),
+                SequenceItem('/some/path/image_padded.0016.tif'),
+                SequenceItem('/some/path/image_padded.0017.tif'),
+                SequenceItem('/some/path/image_padded.0018.tif'),
+                SequenceItem('/some/path/image_padded.0019.tif'),
+                SequenceItem('/some/path/image_padded.0020.tif'),
+                Sequence(template='/some/path/image_padded.####.tif',
+                    items=[
+                        SequenceItem('/some/path/image_padded.0035.tif'),
+                        SequenceItem('/some/path/image_padded.0036.tif'),
+                        SequenceItem('/some/path/image_padded.0037.tif'),
+                    ]
+                ),
+            ]
+        )\
+        ''').rstrip()
+
+        self.assertEqual(repr(sequence1), expected_output)
+
+    def test_repr_sequence_complex_0001(self):
+        '''Test the print of a sequence with nested and individual elements.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=10, end=20)
+        sequence2 = Sequence(hash_repr, start=35, end=42)
+        sequence1.add_in_place(sequence2)
+
+        for index in range(22, 34, 2):
+            sequence1.add_in_place(index)
+
+        sequence1.add_in_place(100)
+
+        expected_output = textwrap.dedent(
+        '''\
+        Sequence(template='/some/path/image_padded.####.tif',
+            items=[
+                SequenceItem('/some/path/image_padded.0010.tif'),
+                SequenceItem('/some/path/image_padded.0011.tif'),
+                SequenceItem('/some/path/image_padded.0012.tif'),
+                SequenceItem('/some/path/image_padded.0013.tif'),
+                SequenceItem('/some/path/image_padded.0014.tif'),
+                SequenceItem('/some/path/image_padded.0015.tif'),
+                SequenceItem('/some/path/image_padded.0016.tif'),
+                SequenceItem('/some/path/image_padded.0017.tif'),
+                SequenceItem('/some/path/image_padded.0018.tif'),
+                SequenceItem('/some/path/image_padded.0019.tif'),
+                SequenceItem('/some/path/image_padded.0020.tif'),
+                SequenceItem('/some/path/image_padded.0022.tif'),
+                SequenceItem('/some/path/image_padded.0024.tif'),
+                SequenceItem('/some/path/image_padded.0026.tif'),
+                SequenceItem('/some/path/image_padded.0028.tif'),
+                SequenceItem('/some/path/image_padded.0030.tif'),
+                SequenceItem('/some/path/image_padded.0032.tif'),
+                Sequence(template='/some/path/image_padded.####.tif',
+                    items=[
+                        SequenceItem('/some/path/image_padded.0035.tif'),
+                        SequenceItem('/some/path/image_padded.0036.tif'),
+                        SequenceItem('/some/path/image_padded.0037.tif'),
+                        SequenceItem('/some/path/image_padded.0038.tif'),
+                        SequenceItem('/some/path/image_padded.0039.tif'),
+                        SequenceItem('/some/path/image_padded.0040.tif'),
+                        SequenceItem('/some/path/image_padded.0041.tif'),
+                        SequenceItem('/some/path/image_padded.0042.tif'),
+                    ]
+                ),
+                SequenceItem('/some/path/image_padded.0100.tif'),
+            ]
+        )\
+        ''').rstrip()
+
+        self.assertEqual(repr(sequence1), expected_output)
+
+
+class MakeSequenceTestCase(unittest.TestCase):
+
+    '''Test the different ways that we can create sequences.'''
+
+    def test_build_sequences_from_files(self):
+        '''Create a sequence from a list of files.
+
+        This list could be from a os.listdir() or some other method.
+
+        '''
+        some_file_paths = \
+            [
+                # a discontinuous sequence
+                '/some/path/file_name.1001.tif',
+                '/some/path/file_name.1002.tif',
+                '/some/path/file_name.1003.tif',
+                '/some/path/file_name.1004.tif',
+
+                '/some/path/file_name.1006.tif',
+                '/some/path/file_name.1007.tif',
+                '/some/path/file_name.1008.tif',
+
+                # a continuous sequence
+                '/some/path/another_file_name.001009.tif',
+                '/some/path/another_file_name.001010.tif',
+                '/some/path/another_file_name.001011.tif',
+                '/some/path/another_file_name.001012.tif',
+
+                # another, continuous sequence with a different padding
+                '/some/path/another_file_name.1009.tif',
+                '/some/path/another_file_name.1010.tif',
+                '/some/path/another_file_name.1011.tif',
+                '/some/path/another_file_name.1012.tif',
+
+                # a sequence in different directory
+                '/some/other/path/another_file_name.1001.tif',
+                '/some/other/path/another_file_name.1002.tif',
+                '/some/other/path/another_file_name.1003.tif',
+                '/some/other/path/another_file_name.1004.tif',
+
+                # a 2D sequence
+                '/some/2d/sequence_u3_v6.tif',
+                '/some/2d/sequence_u3_v7.tif',
+                '/some/2d/sequence_u3_v8.tif',
+                '/some/2d/sequence_u3_v9.tif',
+                '/some/2d/sequence_u4_v0.tif',
+                '/some/2d/sequence_u4_v1.tif',
+                '/some/2d/sequence_u4_v2.tif',
+                '/some/2d/sequence_u4_v3.tif',
+                '/some/2d/sequence_u4_v4.tif',
+
+                # a single item (no sequence)
+                '/single/item.1001.tif',
+            ]
+
+        sequence_objects = get_sequence_objects(some_file_paths)
+        sequences = [item for item in sequence_objects
+                     if isinstance(item, Sequence)]
+        sequence_items = [item for item in sequence_objects
+                          if isinstance(item, SequenceItem)]
+
+        self.assertEqual(len(sequences), 5)
+        self.assertEqual(len(sequence_items), 1)
+
+    def test_build_sequence_from_files_adapter(self):
+        '''Initialize a Sequence object using only a list of files.'''
+        some_file_paths = \
+            [
+                # a discontinuous sequence
+                '/some/path/file_name.1001.tif',
+                '/some/path/file_name.1002.tif',
+                '/some/path/file_name.1003.tif',
+                '/some/path/file_name.1004.tif',
+            ]
+
+        sequence = Sequence(some_file_paths)
+        item_paths = [item.path for item in sequence]
+
+        self.assertEqual(some_file_paths, item_paths)
 
 
 # class UdimSequnceSetRangeTestCase(unittest.TestCase):
@@ -1074,6 +1454,118 @@ class SequenceMethodTestCase(unittest.TestCase):
 #         raise NotImplementedError('Need to write this')
 
 
+# class GetSequenceTestCase(unittest.TestCase):
+#     def test_get_sequence_for_mari_sequence(self):
+
+#         pass
+
+#     def test_get_sequence_for_sequences(self):
+#         pass
+
+# def test_build_sequences_of_varying_dimensions(self):
+#     '''Auto-determine the right sequence classes needed to make.
+
+#     In the test_build_sequences_from_files test, a bunch of varying sequence
+#     input is tested but all of the sequences are the same dimension.
+
+#     Here, we'll make sure that UDIMs will work with regular sequences.
+
+#     '''
+#     some_file_paths = \
+#         [
+#             # a discontinuous sequence. This sequence could be a UDIM
+#             # but also could be a file sequence starting at 1001.
+#             # Without the 10th index, (Where 1009 becomes 1100) it's
+#             # impossible to know. So we assume, in that case, it's just
+#             # a regular sequence
+#             #
+#             '/some/path/file_name.1001.tif',
+#             '/some/path/file_name.1002.tif',
+#             '/some/path/file_name.1003.tif',
+#             '/some/path/file_name.1004.tif',
+
+#             '/some/path/file_name.1006.tif',
+#             '/some/path/file_name.1007.tif',
+#             '/some/path/file_name.1008.tif',
+
+#             # a continuous sequence
+#             '/some/path/another_file_name.001009.tif',
+#             '/some/path/another_file_name.001010.tif',
+#             '/some/path/another_file_name.001011.tif',
+#             '/some/path/another_file_name.001012.tif',
+
+#             # A UDIM, 2D sequence
+#             '/some/path/udim_file_name.1001.tif',
+#             '/some/path/udim_file_name.1002.tif',
+#             '/some/path/udim_file_name.1003.tif',
+#             '/some/path/udim_file_name.1004.tif',
+#             '/some/path/udim_file_name.1005.tif',
+#             '/some/path/udim_file_name.1006.tif',
+#             '/some/path/udim_file_name.1007.tif',
+#             '/some/path/udim_file_name.1008.tif',
+#             '/some/path/udim_file_name.1009.tif',
+#             '/some/path/udim_file_name.1101.tif',
+#         ]
+
+#     sequence_objects = get_sequence_objects(some_file_paths)
+#     sequences = [item for item in sequence_objects
+#                  if isinstance(item, Sequence)]
+#     sequence_items = [item for item in sequence_objects
+#                       if isinstance(item, SequenceItem)]
+
+#     self.assertEqual(len(sequences), 4)
+#     self.assertEqual(len(sequence_items), 1)
+
+# def test_sequence_udim_types(self):
+#     some_file_paths = [
+#         # A Mari UDIM sequence
+#         '/some/path/file_name.1001.tif',
+#         '/some/path/file_name.1002.tif',
+#         '/some/path/file_name.1003.tif',
+#         '/some/path/file_name.1004.tif',
+#         '/some/path/file_name.1005.tif',
+#         '/some/path/file_name.1006.tif',
+#         '/some/path/file_name.1007.tif',
+#         '/some/path/file_name.1008.tif',
+#         '/some/path/file_name.1009.tif',
+#         '/some/path/file_name.1101.tif',
+#         '/some/path/file_name.1102.tif',
+#         '/some/path/file_name.1103.tif',
+
+#         # A Zbrush sequence (which is missing its first index)
+#         '/some/path/file_name2_u0_v1.tif'
+#         '/some/path/file_name2_u0_v2.tif'
+#         '/some/path/file_name2_u0_v3.tif'
+#         '/some/path/file_name2_u0_v4.tif'
+#         '/some/path/file_name2_u0_v5.tif'
+#         '/some/path/file_name2_u0_v6.tif'
+#         '/some/path/file_name2_u0_v7.tif'
+#         '/some/path/file_name2_u0_v8.tif'
+#         '/some/path/file_name2_u0_v9.tif'
+#         '/some/path/file_name2_u0_v10.tif'
+#         '/some/path/file_name2_u1_v0.tif'
+#         '/some/path/file_name2_u1_v2.tif'
+
+#         # A Mudbox sequence (algorithmically, it's impossible to know if
+#         # this is a mudbox sequence or a Zbrush sequence that is missing
+#         # its first 10 indexes. But we assume it's Mudbox because what
+#         # person would not use the first 10 indexes?)
+#         #
+#         '/some/path/file_name2_u1_v1.tif'
+#         '/some/path/file_name2_u1_v2.tif'
+#         '/some/path/file_name2_u1_v3.tif'
+#         '/some/path/file_name2_u1_v4.tif'
+#         '/some/path/file_name2_u1_v5.tif'
+#         '/some/path/file_name2_u1_v6.tif'
+#         '/some/path/file_name2_u1_v7.tif'
+#         '/some/path/file_name2_u1_v8.tif'
+#         '/some/path/file_name2_u1_v9.tif'
+#         '/some/path/file_name2_u1_v10.tif'
+#         '/some/path/file_name2_u2_v0.tif'
+#         '/some/path/file_name2_u2_v2.tif'
+#     ]
+
+
 class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
     '''Test cases for special sequences that have more than one dimension.
@@ -1084,9 +1576,9 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
     def test_initialization(self):
         '''Create a multi-dimensional sequence.'''
-        pound_repr = '/some/path/image_padded_u*_v*.tif'
         SequenceMultiDimensional(
-            pound_repr, start=[0, 0], end=[0, 3])
+            '/some/path/image_padded_u*_v*.tif',
+            start=[0, 0], end=[0, 3])
 
     def test_udim_sequence_item_set_value_0001(self):
         '''Set the first value of a multi-dimensional sequence item path.
@@ -1096,8 +1588,8 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
             will change the 'u' value.
 
         '''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         udim_image.set_value(4, position=0)
 
         self.assertEqual(udim_image.path, '/some/path/image_padded_u4_v6.tif')
@@ -1110,16 +1602,16 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
             element will change the 'u' value.
 
         '''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         udim_image.set_value(4, position=1)
 
         self.assertEqual(udim_image.path, '/some/path/image_padded_u3_v4.tif')
 
     def test_udim_sequence_item_set_value_failed_0001(self):
         '''Fail to set value if it can't match the dimensions on a sequence.'''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         try:
             udim_image.set_value(4)
         except ValueError:
@@ -1129,17 +1621,17 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
     def test_udim_sequence_item_set_multi_value(self):
         '''Set every value on a multi-dimensional sequence item, at once.'''
-        pound_repr = '/some/path/image_padded_u3_v6.tif'
-        udim_image = SequenceItem(pound_repr)
+        udim_repr = '/some/path/image_padded_u3_v6.tif'
+        udim_image = SequenceItem(udim_repr)
         udim_image.set_value([0, 1])
 
         self.assertEqual(udim_image.path, '/some/path/image_padded_u0_v1.tif')
 
     def test_iteration_flat(self):
         '''Iterate over a UDIM sequence's elements.'''
-        pound_repr = '/some/path/image_padded_u*_v*.tif'
         sequence = SequenceMultiDimensional(
-            pound_repr, start=[0, 8], end=[1, 1])
+            '/some/path/image_padded_u*_v*.tif',
+            start=[0, 8], end=[1, 1])
 
         expected_items = \
             [
@@ -1152,6 +1644,7 @@ class SequenceMultiDimensionalTestCase(unittest.TestCase):
 
         iterated_items = [item.path for item in sequence]
         self.assertEqual(iterated_items, expected_items)
+
 
 # class MayaFileSequenceTestCase(unittest.TestCase):
 #     def test_image_in_project_folder(self):
