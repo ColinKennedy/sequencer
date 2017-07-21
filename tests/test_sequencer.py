@@ -175,6 +175,34 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 
         self.assertEqual(sequence.template, '/a/path/image_padded.####.tif')
 
+    def test_convert_dollar_f_to_angular(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.<f>.tif'.'''
+        sequence = Sequence('/a/path/image_padded.$F3.tif', start=10, end=20)
+        sequence.set_type('angular')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
+
+    def test_convert_dollar_f_to_glob(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.*.tif'.'''
+        sequence = Sequence('/a/path/image_padded.$F3.tif', start=10, end=20)
+        sequence.set_type('glob')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.*.tif')
+
+    def test_convert_dollar_f_to_percent(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.%03d.tif'.'''
+        sequence = Sequence('/a/path/image_padded.$F3.tif', start=10, end=20)
+        sequence.set_type('percent')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.%03d.tif')
+
+    def test_convert_dollar_f_to_hash(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.###.tif'.'''
+        sequence = Sequence('/a/path/image_padded.$F3.tif', start=10, end=20)
+        sequence.set_type('hash')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.###.tif')
+
 #     # def test_convert_format_to_angular(self):
 #     #     pass
 
@@ -197,6 +225,13 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
         sequence.set_type('angular')
 
         self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
+
+    def test_convert_glob_to_dollar_f(self):
+        '''Change from 'some_image.*.tif' to 'some_image.$F4.tif'.'''
+        sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
+        sequence.set_type('dollar_f', padding=4)
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.$F4.tif')
 
 #     # def test_convert_glob_to_format(self):
 #     #     pass
@@ -234,6 +269,13 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 
         self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
 
+    def test_convert_percent_to_dollar_f(self):
+        '''Change from 'some_image,%04d.tif' to 'some_image.$F4.tif'.'''
+        sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
+        sequence.set_type('dollar_f')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.$F4.tif')
+
 #     # def test_convert_percent_to_format(self):
 #     #     pass
 
@@ -269,6 +311,13 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
         sequence.set_type('angular')
 
         self.assertEqual(sequence.template, '/a/path/image_padded.<fnum>.tif')
+
+    def test_convert_hash_to_dollar_f(self):
+        '''Change from 'some_image,####.tif' to 'some_image.$F4.tif'.'''
+        sequence = Sequence('/a/path/image_padded.####.tif', start=10, end=20)
+        sequence.set_type('dollar_f')
+
+        self.assertEqual(sequence.template, '/a/path/image_padded.$F4.tif')
 
 #     # def test_convert_hash_to_format(self):
 #     #     pass
