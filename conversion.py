@@ -64,7 +64,7 @@ def get_items_dollar_f(path):
 def get_value_dollar_f(item):
     r'''int: The padding of some $F\d string.'''
     dollar_f_regex = r'\$F(\d+)?'
-    match = re.match(dollar_f_regex)
+    match = re.match(dollar_f_regex, item)
     if match is None:
         return 0
     return int(match.group(1))
