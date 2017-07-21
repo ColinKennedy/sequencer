@@ -141,7 +141,7 @@ class Sequence(collections.MutableSequence):
 
             example_item = items[0]
 
-            # Choose the a padding insensitive type or sensitive type
+            # Choose a padding insensitive type or sensitive type
             # (glob vs hash, for example)
             #
             if has_consistent_padding:
@@ -366,6 +366,25 @@ class Sequence(collections.MutableSequence):
             if item is not None:
                 return item
 
+    def _tokenize_sequence_path(self):
+        '''tuple[list[str], list[str]]: The non-digit and digit parts.'''
+        # /some/path.####.tif -> /some/path.{:04d}.tif
+        formatted_string = self.repr_sequence['to_format'](self.template)
+        # Remove any inner key info (like 04d) which would cause our next
+        # format to fail
+        #
+        # /some/path.{:04d}.tif -> /some/path.{}.tif
+        #
+        formatted_string = re.sub('\{.+\}', '{}', formatted_string)
+
+        # /some/path.{}.tif -> ['/some/path.', '.tif']
+        non_digit_items = formatted_string.split('{}')
+
+        # /some/path.####.tif -> ['/some/path.', '####', '.tif']
+        digit_items = split_using_subitems(self.template, non_digit_items)
+
+        return (non_digit_items, digit_items)
+
     def has(self, item):
         '''Check if an object is in this object instance.
 
@@ -386,7 +405,7 @@ class Sequence(collections.MutableSequence):
                 '''Create the object and store the given item.
 
                 Args:
-                    item (SequnceItem or Sequence): The object to adapt.
+                    item (SequenceItem or Sequence): The object to adapt.
 
                 '''
                 super(SequenceAdapter, self).__init__()
@@ -651,29 +670,23 @@ class Sequence(collections.MutableSequence):
         for item in self:
             item.set_padding(value, position)
 
-        some_item = self.items[0]  # Doesn't matter which item we use
-
-        value, position = some_item._conform_value_iterable(
-            value, position)
-
-        # '/some/path.1001.tif' -> ['/some/path.', '1001', '.tif']
-        non_digits = some_item.get_non_digits()
-
-        # '/some/template.####.tif' -> ['/some/path.', '####', '.tif']
-        split_items = split_using_subitems(self.template, non_digits)
-
+        non_digit_items, digit_items = self._tokenize_sequence_path()
         # ['/some/path.', '####', '.tif'] -> ['####']
-        format_items = [item for item in split_items
-                        if self.repr_sequence['is_valid'](item)]
+        digit_repr_items = [item for item in digit_items
+                            if item not in non_digit_items]
 
-        # Mutate the format items with our new padding(s)
+        if position is None:
+            position = list(range(len(digit_repr_items)))
+
+        # Example: If value was 3
+        # ['####'] -> ['###']
+        #
         for position_ in position:
-            new_value = self.repr_sequence['make'](value[position_])
-            format_items[position_] = new_value
+            digit_repr_items[position_] = self.repr_sequence['make'](value)
 
-        # Re-construct the template and assign it to our object
-        final_template = make_alternating_list(non_digits, format_items)
-        self.template = ''.join(final_template)
+        # Join the new non_digit and digit parts together
+        new_template = make_alternating_list(non_digit_items, digit_repr_items)
+        self.template = ''.join(new_template)
 
     def set_type(self, as_type, padding=None):
         '''Change the type of this sequence to the given type.
