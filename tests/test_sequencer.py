@@ -203,21 +203,6 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 
         self.assertEqual(sequence.template, '/a/path/image_padded.###.tif')
 
-#     # def test_convert_format_to_angular(self):
-#     #     pass
-
-#     # def test_convert_format_to_format(self):
-#     #     pass
-
-#     # def test_convert_format_to_glob(self):
-#     #     pass
-
-#     # def test_convert_format_to_percent(self):
-#     #     pass
-
-#     # def test_convert_format_to_hash(self):
-#     #     pass
-
     def test_convert_glob_to_angular(self):
         '''Change from '/some/path.*.tif' to '/some/path.<fnum>.tif'.'''
         sequence = Sequence('/a/path/image_padded.*.tif', start=10, end=20)
@@ -232,9 +217,6 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
         sequence.set_type('dollar_f', padding=4)
 
         self.assertEqual(sequence.template, '/a/path/image_padded.$F4.tif')
-
-#     # def test_convert_glob_to_format(self):
-#     #     pass
 
     def test_convert_glob_to_glob(self):
         '''Change from '/some/path.*.tif' to '/some/path.*.tif'.'''
@@ -276,9 +258,6 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 
         self.assertEqual(sequence.template, '/a/path/image_padded.$F4.tif')
 
-#     # def test_convert_percent_to_format(self):
-#     #     pass
-
     def test_convert_percent_to_glob(self):
         '''Change from '/some/path.%04d.tif' to '/some/path.*.tif'.'''
         sequence = Sequence('/a/path/image_padded.%04d.tif', start=10, end=20)
@@ -318,9 +297,6 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
         sequence.set_type('dollar_f')
 
         self.assertEqual(sequence.template, '/a/path/image_padded.$F4.tif')
-
-#     # def test_convert_hash_to_format(self):
-#     #     pass
 
     def test_convert_hash_to_glob(self):
         '''Change from '/some/path.####.tif' to '/some/path.*.tif'.'''
@@ -588,6 +564,18 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence2.add_in_place(sequence3)
         sequence.add_in_place(sequence2)
         self.assertEqual(sequence.get_end(), 250)
+
+    def test_get_padding_single(self):
+        '''Get the padding of a single-dimension sequence.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=10)
+        self.assertEqual(sequence.get_padding(), 4)
+
+    def test_get_padding_multi_dimension(self):
+        '''Get the padding of a 2D (or more) dimension sequence.'''
+        hash_repr = '/some/path/image_padded.#####.####.tif'
+        sequence = SequenceMultiDimensional(hash_repr, start=(0, 0), end=(10, 10))
+        self.assertEqual(sequence.get_padding(), (5, 4))
 
     def test_set_padding(self):
         '''Change the padding of a sequence object.'''

@@ -550,6 +550,37 @@ class Sequence(collections.MutableSequence):
         '''str: Create a Python-style format string from this sequence.'''
         return self.repr_sequence['to_format'](self.template)
 
+    def get_padding(self, position=None):
+        '''Get the padding of some point of this item.
+
+        If this item is multi-dimensional and position is not given, every
+        padding position is returned.
+
+        Args:
+            position (int or tuple[int]): The index(es) which each value change.
+
+        Returns:
+            int or tuple[int]: The padding at each digit on this item.
+                               If the seqeuence is one dimensional, the value
+                               that returns is not iterable.
+
+        '''
+        _, digit_parts = self._tokenize_sequence_path()
+
+        if position is None:
+            position = range(len(digit_parts))
+
+        position = check.force_itertype(position)
+
+        paddings = []
+        for position_ in position:
+            paddings.append(digit_parts[position_])
+
+        paddings = tuple(self.repr_sequence['get_value'](padding) for padding in paddings)
+        if len(paddings) == 1:
+            return paddings[0]
+        return paddings
+
     def get_start_item(self, recursive=False):
         '''SequenceItem or Sequence: The object with the lowest value.'''
         def get_start_recursive(item):
@@ -675,21 +706,18 @@ class Sequence(collections.MutableSequence):
             item.set_padding(value, position)
 
         non_digit_items, digit_items = self._tokenize_sequence_path()
-        # ['/some/path.', '####', '.tif'] -> ['####']
-        digit_repr_items = [item for item in digit_items
-                            if item not in non_digit_items]
 
         if position is None:
-            position = list(range(len(digit_repr_items)))
+            position = list(range(len(digit_items)))
 
         # Example: If value was 3
         # ['####'] -> ['###']
         #
         for position_ in position:
-            digit_repr_items[position_] = self.repr_sequence['make'](value)
+            digit_items[position_] = self.repr_sequence['make'](value)
 
         # Join the new non_digit and digit parts together
-        new_template = make_alternating_list(non_digit_items, digit_repr_items)
+        new_template = make_alternating_list(non_digit_items, digit_items)
         self.template = ''.join(new_template)
 
     def set_type(self, as_type, padding=None):
@@ -1343,8 +1371,8 @@ def split_using_subitems(base, subitems, include_subitems=False):
     base will not split properly.
 
     Todo:
-        I can't figure out how to get what I want so I made this ghetto thing
-        This should definitely be optimized.
+        I tried doing the same thing with re.split but can't figure out why it
+        wasn't working. If time, go back and change this to use it.
 
     Args:
         base (str): The whole string to split. This object, ideally, should have
@@ -1363,30 +1391,16 @@ def split_using_subitems(base, subitems, include_subitems=False):
     if include_subitems:
         raise NotImplementedError('Need to make include_subitems do something.')
 
-    final_split = []
-    split_items_len = len(subitems)
-    last_end = None
-    for index, item in enumerate(subitems):
-        starting_index = base.index(item)
+    parts = []
+    chunk_to_split = base
+    for item in subitems:
+        prefix, others = chunk_to_split.split(item, 1)
+        chunk_to_split = others
+        if prefix:
+            parts.append(prefix)
+        parts.append(item)
 
-        if index == 0:
-            start = base[:starting_index]
-            if start:
-                final_split.append(start)
-
-        if last_end is not None and starting_index != last_end:
-            final_split.append(base[last_end:starting_index])
-
-        ending_index = starting_index + len(item)
-        last_end = ending_index
-        final_split.append(base[starting_index:ending_index])
-
-        if index + 1 == split_items_len:
-            ending = base[ending_index:]
-            if ending:
-                final_split.append()
-
-    return tuple(final_split)
+    return parts
 
 
 if __name__ == '__main__':
