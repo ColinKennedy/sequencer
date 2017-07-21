@@ -375,15 +375,19 @@ class Sequence(collections.MutableSequence):
         #
         # /some/path.{:04d}.tif -> /some/path.{}.tif
         #
-        formatted_string = re.sub('\{.+\}', '{}', formatted_string)
+        formatted_string = re.sub('\{[^\{\}]+\}', '{}', formatted_string)
 
         # /some/path.{}.tif -> ['/some/path.', '.tif']
         non_digit_items = formatted_string.split('{}')
 
         # /some/path.####.tif -> ['/some/path.', '####', '.tif']
-        digit_items = split_using_subitems(self.template, non_digit_items)
+        digit_parts = split_using_subitems(self.template, non_digit_items)
 
-        return (non_digit_items, digit_items)
+        # ['/some/path.', '####', '.tif'] -> ['####']
+        digit_repr_items = [item for item in digit_parts
+                            if item not in non_digit_items]
+
+        return (non_digit_items, digit_repr_items)
 
     def has(self, item):
         '''Check if an object is in this object instance.
