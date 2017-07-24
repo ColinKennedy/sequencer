@@ -1240,14 +1240,14 @@ class SequenceMultiDimensional(Sequence):
         return udim_iterator.UdimIterator2D(*args, **kwargs)
 
 
-def get_sequence_objects(file_paths, sequence_only=False, sort=sorted):
+def get_sequence_objects(file_paths, sequence_only=True, sort=sorted):
     '''Create sequence objects from raw file paths.
 
     Args:
         file_paths (list[str]): The paths to convert into sequence objects.
         sequence_only (:obj:`bool`, optional):
             If True, only Sequence classes will be returned. If False,
-            Sequence and SequenceItem objects will return. Default is False.
+            Sequence and SequenceItem objects will return. Default is True.
         sort (:obj:`callable[list[str]`, optional):
             A sort strategy for a list of files.
             Default: Python's built-in sorted() method.

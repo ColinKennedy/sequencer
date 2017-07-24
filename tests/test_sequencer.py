@@ -1331,7 +1331,8 @@ class MakeSequenceTestCase(unittest.TestCase):
                 '/single/item.1001.tif',
             ]
 
-        sequence_objects = get_sequence_objects(some_file_paths)
+        sequence_objects = get_sequence_objects(some_file_paths,
+                                                sequence_only=False)
         sequences = [item for item in sequence_objects
                      if isinstance(item, Sequence)]
         sequence_items = [item for item in sequence_objects
