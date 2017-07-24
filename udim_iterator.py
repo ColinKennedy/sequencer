@@ -140,7 +140,7 @@ class UdimIntAdapter(object):
         self.width = width
 
     def __iadd__(self, value):
-        '''Convert the value to something is object can understand and += it.
+        '''Convert value to something that this object can understand and += it.
 
         Args:
             value (int or tuple[int, int]): The value to increment this object.
