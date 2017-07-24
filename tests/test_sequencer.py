@@ -494,6 +494,13 @@ class SequenceConstructionTestCase(unittest.TestCase):
         sequence = Sequence(some_sequence, start=1001, end=2001)
         self.assertEqual(sequence.get_dimensions(), 1)
 
+    def test_single_item_sequence(self):
+        '''Make a pseudo-sequence that is actually just one value.'''
+        some_item = '/some/path/image_padded.0010.tif'
+        sequence = Sequence(some_item)
+        expected_item = SequenceItem('/some/path/image_padded.0010.tif')
+        self.assertEqual([10], [item.get_value() for item in sequence])
+
     # @clear_temp_files_folders
     # def test_0001_image_path_udim_mari(self):
     #     raise NotImplementedError('Need to write this')
@@ -1348,6 +1355,38 @@ class MakeSequenceTestCase(unittest.TestCase):
         item_paths = [item.path for item in sequence]
 
         self.assertEqual(some_file_paths, item_paths)
+
+    def test_build_sequence_only(self):
+        '''Test that all items found will come back as Sequence objects.'''
+        some_file_paths = [
+            # a discontinuous sequence
+            '/some/path/file_name.1001.tif',
+            '/some/path/file_name.1002.tif',
+            '/some/path/file_name.1003.tif',
+            '/some/path/file_name.1004.tif',
+
+            '/some/path/file_name.1006.tif',
+            '/some/path/file_name.1007.tif',
+            '/some/path/file_name.1008.tif',
+
+            # a continuous sequence
+            '/some/path/another_file_name.001009.tif',
+            '/some/path/another_file_name.001010.tif',
+            '/some/path/another_file_name.001011.tif',
+            '/some/path/another_file_name.001012.tif',
+
+            # another, continuous sequence with a different padding
+            '/some/path/another_file_name.1009.tif',
+            '/some/path/another_file_name.1010.tif',
+            '/some/path/another_file_name.1011.tif',
+            '/some/path/another_file_name.1012.tif',
+
+            # A single item, which will also be cast to a Sequence
+            '/some/path/another_file_name2.0001.tif',
+        ]
+
+        sequences = get_sequence_objects(some_file_paths, sequence_only=True)
+        self.assertEqual(len(sequences), 4)
 
 
 # class UdimSequnceSetRangeTestCase(unittest.TestCase):

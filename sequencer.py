@@ -162,14 +162,30 @@ class Sequence(collections.MutableSequence):
 
         self.template = template
         self.repr_sequence = conversion.get_repr_container(self.template)
+        if self.repr_sequence is None:
+            # Assume that the user gave an actual path to an item
+            # (like /some/path.1001.tif, instead of /some/path.####.tif)
+            #
+            # If that's the case, default to a glob-type and assume there is
+            # no padding
+            #
+            self.repr_sequence = conversion.REPR_SEQUENCES['glob']
+            non_digits = self._tokenize_sequence_path()[0]
+            formatted_template = '*'.join(non_digits)
 
-        formatted_template = self.repr_sequence['to_format'](self.template)
+            value = self.get_sequence_item(self.template)
+            start = (value, )
+            end = (value, )
+        else:
+            formatted_template = self.repr_sequence['to_format'](self.template)
 
-        if is_empty_sequence:
-            # Create some bogus values for start and end
-            dimensions = conversion.get_dimensions(formatted_template)
-            start = tuple(0 for item in range(dimensions))
-            end = tuple(0 for item in range(dimensions))
+            if is_empty_sequence:
+                # Create some bogus values for start and end so that we can get away
+                # with not actually having any know start/end bounds
+                #
+                dimensions = conversion.get_dimensions(formatted_template)
+                start = tuple(0 for item in range(dimensions))
+                end = tuple(0 for item in range(dimensions))
 
         # As a precaution, in case this template is a 2D sequence
         # (like a UDIM) wrap all start/end values into lists
@@ -1224,11 +1240,14 @@ class SequenceMultiDimensional(Sequence):
         return udim_iterator.UdimIterator2D(*args, **kwargs)
 
 
-def get_sequence_objects(file_paths, sort=sorted):
+def get_sequence_objects(file_paths, sequence_only=False, sort=sorted):
     '''Create sequence objects from raw file paths.
 
     Args:
         file_paths (list[str]): The paths to convert into sequence objects.
+        sequence_only (:obj:`bool`, optional):
+            If True, only Sequence classes will be returned. If False,
+            Sequence and SequenceItem objects will return. Default is False.
         sort (:obj:`callable[list[str]`, optional):
             A sort strategy for a list of files.
             Default: Python's built-in sorted() method.
@@ -1276,7 +1295,10 @@ def get_sequence_objects(file_paths, sort=sorted):
     for path, path_info in sequence_collector.items():
         for padding, items in path_info.items():
             if len(items) < 2:
-                sequence_object = sequencer_item.SequenceItem(path)
+                if sequence_only:
+                    sequence_object = Sequence(items[0].path)
+                else:
+                    sequence_object = sequencer_item.SequenceItem(path)
             else:
                 sequence_object = Sequence(path)
                 for item in items:
