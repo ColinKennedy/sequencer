@@ -436,6 +436,20 @@ class SequenceConstructionTestCase(unittest.TestCase):
     #     self.assertEqual(sequence.get_start(), 1)
     #     self.assertEqual(sequence.get_end(), 3)
 
+    def test_create_and_mutate_empty_sequence(self):
+        '''Start with an empty sequence and fill its values.'''
+        sequence = Sequence('/asdfsa/something.####.tif')
+        initial_items = len(sequence)
+
+        sequence.add_in_place(10)
+        start_end1 = (sequence.get_start(), sequence.get_end())
+        sequence.add_in_place(12)
+        start_end2 = (sequence.get_start(), sequence.get_end())
+
+        self.assertEqual(start_end1, (10, 10))
+        self.assertEqual(start_end2, (10, 12))
+        self.assertEqual(initial_items, 0)
+
     @clear_temp_files_folders
     def test_0001_image_path_repr_angular(self):
         '''Create a sequence from a string like /some/image.<f>.tiff.'''

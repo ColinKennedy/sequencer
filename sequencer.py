@@ -11,6 +11,7 @@ for a sequence is 3 consecutive items.
 # IMPORT STANDARD LIBRARIES
 import collections
 import functools
+import operator
 import textwrap
 import re
 
@@ -417,33 +418,6 @@ class Sequence(collections.MutableSequence):
             bool: If the current object instance has the given item inside it.
 
         '''
-        class SequenceAdapter(object):
-
-            '''A ghetto class that unifies the different sequence interfaces.'''
-
-            def __init__(self, item):
-                '''Create the object and store the given item.
-
-                Args:
-                    item (SequenceItem or Sequence): The object to adapt.
-
-                '''
-                super(SequenceAdapter, self).__init__()
-                self.item = item
-
-            @property
-            def path(self):
-                '''str: The path of this object.'''
-                try:
-                    return self.item.path
-                except AttributeError:
-                    pass
-
-                try:
-                    return self.item.template
-                except AttributeError:
-                    return ''
-
         item_ = self._conform_to_sequence_object(item)
         was_wrapped = item.__class__ != item_.__class__
         item = item_
@@ -874,11 +848,6 @@ class Sequence(collections.MutableSequence):
 
         item_value = item.get_value()
 
-        if not hasattr(self, 'start_item') or item_value < self.get_start():
-            self.set_start(item)
-        elif not hasattr(self, 'end_item') or item_value > self.get_end():
-            self.set_end(item)
-
         for index, stored_item in enumerate(list(self)):
             if stored_item.get_value() > item_value:
                 self.insert(index, item)
@@ -911,37 +880,15 @@ class Sequence(collections.MutableSequence):
         item = self._conform_to_sequence_object(item)
         self.items.insert(position, item)
 
-        self._recalculate_range(item)
+        self._recalculate_range()
 
-    def _recalculate_range(self, item=None):
-        '''Figure out the new range for this sequence.
-
-        Args:
-            item (:obj:`SequenceItem or Sequence`, optional):
-                If no item is given to this method, the existing items in the
-                sequence will be used to recalculate the start/end. If an item
-                is given, its value is used to set the start/end.
-
-        '''
-        if item is None:
-            self.start_item = min(self, key=lambda item_: item_.get_value())
-            self.end_item = max(self, key=lambda item_: item_.get_value())
-            return
-
-        if isinstance(item, self.__class__):
-            if item.get_end() > self.get_end():
-                self.end_item = item
-            elif item.get_start() < self.get_start():
-                self.start_item = item
-
-            return  # Note: Early return
-
-        item_value = item.get_value()
-
-        if item_value > self.get_end():
-            self.end_item = item
-        elif item_value < self.get_start():
-            self.start_item = item
+    def _recalculate_range(self):
+        '''Figure out the new range for this sequence based on its items.'''
+        items = [SequenceAdapter(item) for item in self.items]
+        min_value = min(items, key=operator.methodcaller('get_start'))
+        max_value = max(items, key=operator.methodcaller('get_end'))
+        self.start_item = min_value.item
+        self.end_item = max_value.item
 
     def as_range(self, mode='real', function=None):
         '''Get back a range of this sequence.
@@ -1239,6 +1186,58 @@ class SequenceMultiDimensional(Sequence):
     def _items_iterator(self, *args, **kwargs):
         '''<udim_iterator.UdimIterator2D>: The alternate iterator.'''
         return udim_iterator.UdimIterator2D(*args, **kwargs)
+
+
+class SequenceAdapter(object):
+
+    '''A ghetto class that unifies the different sequence interfaces.'''
+
+    def __init__(self, item):
+        '''Create the object and store the given item.
+
+        Args:
+            item (SequenceItem or Sequence): The object to adapt.
+
+        '''
+        super(SequenceAdapter, self).__init__()
+        self.item = item
+
+    @property
+    def path(self):
+        '''str: The path of this object.'''
+        try:
+            return self.item.path
+        except AttributeError:
+            pass
+
+        try:
+            return self.item.template
+        except AttributeError:
+            return ''
+
+    def get_end(self, *args, **kwargs):
+        '''int or list[int]: The sequence value.'''
+        try:
+            return self.item.get_value(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        try:
+            return self.item.get_end(*args, **kwargs)
+        except AttributeError:
+            pass
+
+    def get_start(self, *args, **kwargs):
+        '''int or list[int]: The sequence value.'''
+        try:
+            return self.item.get_value(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        try:
+            return self.item.get_start(*args, **kwargs)
+        except AttributeError:
+            pass
 
 
 def get_sequence_objects(file_paths, sequence_only=True, sort=sorted):
