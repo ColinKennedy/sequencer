@@ -925,19 +925,7 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence.add_in_place(item)
 
         item2 = SequenceItem('/some/path/image_padded.0030.tif')
-        self.assertTrue(sequence.contains(item2))
-
-#     def test_sequence_dunder_contains_sequence(self):
-#         hash_repr = '/some/path/image_padded.####.tif'
-#         sequence = Sequence(hash_repr, start=10, end=20)
-#         sequence1 = Sequence(hash_repr, start=3, end=9)
-
-#         sequence.add_in_place(sequence1)
-
-#         sequence2 = Sequence(hash_repr, start=3, end=9)
-
-#         self.assertTrue(sequence1 in sequence)
-#         self.assertFalse(sequence2 in sequence)
+        self.assertTrue(item2 in sequence)
 
     def test_sequence_dunder_contains_sequence_item(self):
         '''Test that the dunder __contains__ method, to test for equivalency.'''
@@ -1054,7 +1042,7 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence.add_in_place(22)
 
         self.assertTrue(
-            sequence.contains(SequenceItem('/some/path/image_padded.0022.tif')))
+            SequenceItem('/some/path/image_padded.0022.tif') in sequence)
 
     def test_add_sequence_item_int_fails_0001(self):
         '''Make sure that items can be added to a sequence and retrieved.'''
@@ -1063,9 +1051,9 @@ class SequenceMethodTestCase(unittest.TestCase):
             hash_repr, start=[0, 0], end=[0, 10])
         sequence.add_in_place([1, 12])
 
-        self.assertFalse(sequence.contains(22))
-        self.assertTrue(sequence.contains([0, 7]))
-        self.assertTrue(sequence.contains([1, 12]))
+        self.assertFalse(22 in sequence)
+        self.assertTrue([0, 7] in sequence)
+        self.assertTrue([1, 12] in sequence)
 
     def test_sequence_contains_str_path(self):
         '''Check if a path lives in a sequence, using only a string.'''
@@ -1073,21 +1061,7 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence = Sequence(hash_repr, start=10, end=22)
 
         image_path = '/some/path/image_padded.0022.tif'
-        self.assertTrue(sequence.contains(image_path))
-
-    # def test_sequence_contains_str_number_case_sensitive(self):
-    #     hash_repr = '/some/path/image_padded.####.tif'
-    #     sequence = Sequence(hash_repr, start=10, end=22)
-
-    #     self.assertFalse(sequence.contains('22'))
-    #     self.assertTrue(sequence.contains('0022'))
-
-    # def test_sequence_contains_str_number_case_insensitive(self):
-    #     hash_repr = '/some/path/image_padded.*.tif'
-    #     sequence = Sequence(hash_repr, start=10, end=22)
-
-    #     self.assertTrue(sequence.contains('22'))
-    #     self.assertTrue(sequence.contains('0022'))
+        self.assertTrue(image_path, sequence)
 
     def test_sequence_contains_int(self):
         '''Check if an increment lives in a sequence, using just an int.
@@ -1099,9 +1073,9 @@ class SequenceMethodTestCase(unittest.TestCase):
         '''
         hash_repr = '/some/path/image_padded.####.tif'
         sequence = Sequence(hash_repr, start=10, end=20)
-        self.assertTrue(sequence.contains(10))
-        self.assertTrue(sequence.contains(20))
-        self.assertFalse(sequence.contains(22))
+        self.assertTrue(10 in sequence)
+        self.assertTrue(20 in sequence)
+        self.assertFalse(22 in sequence)
 
     # def test_add_sequence(self):
     #     pass

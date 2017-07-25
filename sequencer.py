@@ -527,7 +527,7 @@ class Sequence(collections.MutableSequence):
             return False
 
         for item in sequence:
-            if self.contains(item):
+            if item in self:
                 return False
 
         return True
@@ -898,6 +898,20 @@ class Sequence(collections.MutableSequence):
         self.start_item = min_value.item
         self.end_item = max_value.item
 
+    def fill_gaps(self):
+        '''Add any missing SequenceItem objects to this instance.
+
+        Once this method is run, this object will be a continuous sequence.
+
+        '''
+        # TODO : Consider an interval tree to create sequence objects, instead
+        for item in self.as_range('bounds'):
+            if item not in self:
+                # No need to make copies of the item because as_range('bounds')
+                # are constructed items and are not the same as stored items
+                #
+                self.add_in_place(item)
+
     def as_range(self, mode='real', function=None):
         '''Get back a range of this sequence.
 
@@ -959,9 +973,9 @@ class Sequence(collections.MutableSequence):
                 SequenceItem: The item(s) in the sequence.
 
             '''
-            for item in self._items_iterator(self.get_start('real'),
-                                             self.get_end('real')):
-                yield item
+            for item in self._items_iterator(self.get_start(), self.get_end()):
+                im = check.force_itertype(item)
+                yield self.repr_sequence['to_format'](self.template).format(*im)
 
         if function is None:
             function = return_as_is
@@ -980,32 +994,6 @@ class Sequence(collections.MutableSequence):
                 for item_ in mode_functions[mode](item):
                     yield function(item_)
 
-    def contains(self, item):
-        '''Check if the item's path is inside of this object.
-
-        Note:
-            This is functionaly different from __contains__ (in). Instead of
-            looking for an instance to some item in this object, just the
-            paths of item are compared.
-
-            It's like the difference between == and is.
-
-        Args:
-            SequenceItem or Sequence: The object that contains a path to check
-                                      for in this instance.
-
-        Returns:
-            bool: If the item's path was found in this object instance.
-
-        '''
-        item_in = item in self
-        if item_in:
-            return True
-
-        item = self._conform_to_sequence_object(item)
-
-        return item.path in [item_.path for item_ in self]
-
     def __copy__(self):
         '''Sequence: Make a copy of this instance and return it.'''
         new_item = self.__class__(template=self.template)
@@ -1017,7 +1005,7 @@ class Sequence(collections.MutableSequence):
     def __contains__(self, other):
         '''bool: If the exact, given item is in the sequence.'''
         try:
-            return other in self.items
+            return self._conform_to_sequence_object(other) in self.items
         except AttributeError:
             return False
 
