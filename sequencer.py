@@ -1004,7 +1004,8 @@ class Sequence(collections.MutableSequence):
                 SequenceItem: The item(s) in the sequence.
 
             '''
-            for item in self._items_iterator(self.get_start(), self.get_end()):
+            for item in self._items_iterator(self.get_start('real'),
+                                             self.get_end('real')):
                 yield item
 
         if function is None:
