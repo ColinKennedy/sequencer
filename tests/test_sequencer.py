@@ -1913,116 +1913,111 @@ class MakeSequenceTestCase(unittest.TestCase):
 #         raise NotImplementedError('Need to write this')
 
 
-# class GetSequenceTestCase(unittest.TestCase):
-#     def test_get_sequence_for_mari_sequence(self):
+class GetSequenceTestCase(unittest.TestCase):
 
-#         pass
+    # def test_get_sequence_for_mari_sequence(self):
 
-#     def test_get_sequence_for_sequences(self):
-#         pass
+    #     pass
 
-# def test_build_sequences_of_varying_dimensions(self):
-#     '''Auto-determine the right sequence classes needed to make.
+    # def test_get_sequence_for_sequences(self):
+    #     pass
 
-#     In the test_build_sequences_from_files test, a bunch of varying sequence
-#     input is tested but all of the sequences are the same dimension.
+    def test_build_sequences_of_varying_dimensions(self):
+        '''Auto-determine the right sequence classes needed to make.
 
-#     Here, we'll make sure that UDIMs will work with regular sequences.
+        In the test_build_sequences_from_files test, a bunch of varying sequence
+        input is tested but all of the sequences are the same dimension.
 
-#     '''
-#     some_file_paths = \
-#         [
-#             # a discontinuous sequence. This sequence could be a UDIM
-#             # but also could be a file sequence starting at 1001.
-#             # Without the 10th index, (Where 1009 becomes 1100) it's
-#             # impossible to know. So we assume, in that case, it's just
-#             # a regular sequence
-#             #
-#             '/some/path/file_name.1001.tif',
-#             '/some/path/file_name.1002.tif',
-#             '/some/path/file_name.1003.tif',
-#             '/some/path/file_name.1004.tif',
+        Here, we'll make sure that UDIMs will work with regular sequences.
 
-#             '/some/path/file_name.1006.tif',
-#             '/some/path/file_name.1007.tif',
-#             '/some/path/file_name.1008.tif',
+        '''
+        some_file_paths = \
+            [
+                # a discontinuous sequence. This sequence could be a UDIM
+                # but also could be a file sequence starting at 1001.
+                # Without the 10th index, (Where 1009 becomes 1100) it's
+                # impossible to know. So we assume, in that case, it's just
+                # a regular sequence
+                #
+                '/some/path/file_name.1001.tif',
+                '/some/path/file_name.1002.tif',
+                '/some/path/file_name.1003.tif',
+                '/some/path/file_name.1004.tif',
 
-#             # a continuous sequence
-#             '/some/path/another_file_name.001009.tif',
-#             '/some/path/another_file_name.001010.tif',
-#             '/some/path/another_file_name.001011.tif',
-#             '/some/path/another_file_name.001012.tif',
+                '/some/path/file_name.1006.tif',
+                '/some/path/file_name.1007.tif',
+                '/some/path/file_name.1008.tif',
 
-#             # A UDIM, 2D sequence
-#             '/some/path/udim_file_name.1001.tif',
-#             '/some/path/udim_file_name.1002.tif',
-#             '/some/path/udim_file_name.1003.tif',
-#             '/some/path/udim_file_name.1004.tif',
-#             '/some/path/udim_file_name.1005.tif',
-#             '/some/path/udim_file_name.1006.tif',
-#             '/some/path/udim_file_name.1007.tif',
-#             '/some/path/udim_file_name.1008.tif',
-#             '/some/path/udim_file_name.1009.tif',
-#             '/some/path/udim_file_name.1101.tif',
-#         ]
+                # a continuous sequence
+                '/some/path/another_file_name.001009.tif',
+                '/some/path/another_file_name.001010.tif',
+                '/some/path/another_file_name.001011.tif',
+                '/some/path/another_file_name.001012.tif',
 
-#     sequence_objects = get_sequence_objects(some_file_paths)
-#     sequences = [item for item in sequence_objects
-#                  if isinstance(item, Sequence)]
-#     sequence_items = [item for item in sequence_objects
-#                       if isinstance(item, SequenceItem)]
+                # A UDIM, 2D sequence
+                '/some/path/udim_file_name.1001.tif',
+                '/some/path/udim_file_name.1002.tif',
+                '/some/path/udim_file_name.1003.tif',
+                '/some/path/udim_file_name.1004.tif',
+                '/some/path/udim_file_name.1005.tif',
+                '/some/path/udim_file_name.1006.tif',
+                '/some/path/udim_file_name.1007.tif',
+                '/some/path/udim_file_name.1008.tif',
+                '/some/path/udim_file_name.1009.tif',
+                '/some/path/udim_file_name.1101.tif',
+            ]
 
-#     self.assertEqual(len(sequences), 4)
-#     self.assertEqual(len(sequence_items), 1)
+        sequence_objects = get_sequence_objects(some_file_paths)
+        self.assertEqual(len(sequence_objects), 3)
 
-# def test_sequence_udim_types(self):
-#     some_file_paths = [
-#         # A Mari UDIM sequence
-#         '/some/path/file_name.1001.tif',
-#         '/some/path/file_name.1002.tif',
-#         '/some/path/file_name.1003.tif',
-#         '/some/path/file_name.1004.tif',
-#         '/some/path/file_name.1005.tif',
-#         '/some/path/file_name.1006.tif',
-#         '/some/path/file_name.1007.tif',
-#         '/some/path/file_name.1008.tif',
-#         '/some/path/file_name.1009.tif',
-#         '/some/path/file_name.1101.tif',
-#         '/some/path/file_name.1102.tif',
-#         '/some/path/file_name.1103.tif',
+    def test_sequence_udim_types(self):
+        some_file_paths = [
+            # A Mari UDIM sequence
+            '/some/path/file_name.1001.tif',
+            '/some/path/file_name.1002.tif',
+            '/some/path/file_name.1003.tif',
+            '/some/path/file_name.1004.tif',
+            '/some/path/file_name.1005.tif',
+            '/some/path/file_name.1006.tif',
+            '/some/path/file_name.1007.tif',
+            '/some/path/file_name.1008.tif',
+            '/some/path/file_name.1009.tif',
+            '/some/path/file_name.1101.tif',
+            '/some/path/file_name.1102.tif',
+            '/some/path/file_name.1103.tif',
 
-#         # A Zbrush sequence (which is missing its first index)
-#         '/some/path/file_name2_u0_v1.tif'
-#         '/some/path/file_name2_u0_v2.tif'
-#         '/some/path/file_name2_u0_v3.tif'
-#         '/some/path/file_name2_u0_v4.tif'
-#         '/some/path/file_name2_u0_v5.tif'
-#         '/some/path/file_name2_u0_v6.tif'
-#         '/some/path/file_name2_u0_v7.tif'
-#         '/some/path/file_name2_u0_v8.tif'
-#         '/some/path/file_name2_u0_v9.tif'
-#         '/some/path/file_name2_u0_v10.tif'
-#         '/some/path/file_name2_u1_v0.tif'
-#         '/some/path/file_name2_u1_v2.tif'
+            # A Zbrush sequence (which is missing its first index)
+            '/some/path/file_name2_u0_v1.tif'
+            '/some/path/file_name2_u0_v2.tif'
+            '/some/path/file_name2_u0_v3.tif'
+            '/some/path/file_name2_u0_v4.tif'
+            '/some/path/file_name2_u0_v5.tif'
+            '/some/path/file_name2_u0_v6.tif'
+            '/some/path/file_name2_u0_v7.tif'
+            '/some/path/file_name2_u0_v8.tif'
+            '/some/path/file_name2_u0_v9.tif'
+            '/some/path/file_name2_u0_v10.tif'
+            '/some/path/file_name2_u1_v0.tif'
+            '/some/path/file_name2_u1_v2.tif'
 
-#         # A Mudbox sequence (algorithmically, it's impossible to know if
-#         # this is a mudbox sequence or a Zbrush sequence that is missing
-#         # its first 10 indexes. But we assume it's Mudbox because what
-#         # person would not use the first 10 indexes?)
-#         #
-#         '/some/path/file_name2_u1_v1.tif'
-#         '/some/path/file_name2_u1_v2.tif'
-#         '/some/path/file_name2_u1_v3.tif'
-#         '/some/path/file_name2_u1_v4.tif'
-#         '/some/path/file_name2_u1_v5.tif'
-#         '/some/path/file_name2_u1_v6.tif'
-#         '/some/path/file_name2_u1_v7.tif'
-#         '/some/path/file_name2_u1_v8.tif'
-#         '/some/path/file_name2_u1_v9.tif'
-#         '/some/path/file_name2_u1_v10.tif'
-#         '/some/path/file_name2_u2_v0.tif'
-#         '/some/path/file_name2_u2_v2.tif'
-#     ]
+            # A Mudbox sequence (algorithmically, it's impossible to know if
+            # this is a mudbox sequence or a Zbrush sequence that is missing
+            # its first 10 indexes. But we assume it's Mudbox because what
+            # person would not use the first 10 indexes?)
+            #
+            '/some/path/file_name2_u1_v1.tif'
+            '/some/path/file_name2_u1_v2.tif'
+            '/some/path/file_name2_u1_v3.tif'
+            '/some/path/file_name2_u1_v4.tif'
+            '/some/path/file_name2_u1_v5.tif'
+            '/some/path/file_name2_u1_v6.tif'
+            '/some/path/file_name2_u1_v7.tif'
+            '/some/path/file_name2_u1_v8.tif'
+            '/some/path/file_name2_u1_v9.tif'
+            '/some/path/file_name2_u1_v10.tif'
+            '/some/path/file_name2_u2_v0.tif'
+            '/some/path/file_name2_u2_v2.tif'
+        ]
 
 
 class SequenceMultiDimensionalTestCase(unittest.TestCase):
