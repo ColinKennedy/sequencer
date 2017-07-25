@@ -508,6 +508,42 @@ class Sequence(collections.MutableSequence):
             }
         return mode_options[mode]()
 
+    def fits(self, sequence):
+        '''Check if you can place the given sequence inside of this object.
+
+        Args:
+            sequence (Sequence): The sequence to check.
+
+        Returns:
+            bool: If the given sequence is a subset of this object and
+                  the sequences have no overlapping items, return True.
+
+        '''
+        is_contained = not self < sequence \
+            and not self > sequence \
+            and self.overlaps(sequence)
+
+        if not is_contained:
+            return False
+
+        for item in sequence:
+            if self.contains(item):
+                return False
+
+        return True
+
+    def overlaps(self, sequence):
+        '''Check if the sequence's name and range are similar to this object.
+
+        Args:
+            sequence (Sequence): The sequence to check.
+
+        Returns:
+            bool: If the sequence overlaps.
+
+        '''
+        return self.values_overlap(sequence) and self.has_matching_name(sequence)
+
     def values_overlap(self, sequence):
         '''Check if the given sequence's range intersect this object's range.
 
@@ -525,18 +561,6 @@ class Sequence(collections.MutableSequence):
 
         '''
         return not (self < sequence or self > sequence)
-
-    def overlaps(self, sequence):
-        '''Check if the sequence's name and range are similar to this object.
-
-        Args:
-            sequence (Sequence): The sequence to check.
-
-        Returns:
-            bool: If the sequence overlaps.
-
-        '''
-        return self.values_overlap(sequence) and self.has_matching_name(sequence)
 
     def get_format_path(self):
         '''str: Create a Python-style format string from this sequence.'''
@@ -779,30 +803,6 @@ class Sequence(collections.MutableSequence):
 
         '''
         self.__set_range_point(self.start_item, value)
-
-    def fits(self, sequence):
-        '''Check if you can place the given sequence inside of this object.
-
-        Args:
-            sequence (Sequence): The sequence to check.
-
-        Returns:
-            bool: If the given sequence is a subset of this object and
-                  the sequences have no overlapping items, return True.
-
-        '''
-        is_contained = not self < sequence \
-            and not self > sequence \
-            and self.overlaps(sequence)
-
-        if not is_contained:
-            return False
-
-        for item in sequence:
-            if self.contains(item):
-                return False
-
-        return True
 
     def add_sequence_in_place(self, sequence):
         '''Figure out the best place to add an sequence and then add it.
