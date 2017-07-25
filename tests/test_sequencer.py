@@ -747,6 +747,67 @@ class SequenceMethodTestCase(unittest.TestCase):
         else:
             self.assertTrue(False)
 
+    def test_sequence_fill_gaps_in_sequence(self):
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=15)
+        sequence.set_end(20)
+        sequence.fill_gaps()
+
+        expected_sequence = Sequence(
+            [
+                '/some/path/image_padded.0010.tif',
+                '/some/path/image_padded.0011.tif',
+                '/some/path/image_padded.0012.tif',
+                '/some/path/image_padded.0013.tif',
+                '/some/path/image_padded.0014.tif',
+                '/some/path/image_padded.0015.tif',
+                '/some/path/image_padded.0016.tif',
+                '/some/path/image_padded.0017.tif',
+                '/some/path/image_padded.0018.tif',
+                '/some/path/image_padded.0019.tif',
+                '/some/path/image_padded.0020.tif',
+            ]
+        )
+        self.assertEqual(sequence, expected_sequence)
+
+    def test_sequence_fill_gaps_in_empty_sequence_fails(self):
+        '''Silently fail to fill gaps if no items were found.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr)
+        try:
+            sequence.fill_gaps()
+        except:
+            raised = True
+        else:
+            raised = False
+
+        self.assertFalse(raised)
+
+    def test_sequence_fill_gaps_in_empty_mutated_sequence(self):
+        '''Fill any gaps in a sequence that was once empty.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr)
+        sequence.add_in_place(10)
+        sequence.add_in_place(20)
+        sequence.fill_gaps()
+
+        expected_sequence = Sequence(
+            [
+                '/some/path/image_padded.0010.tif',
+                '/some/path/image_padded.0011.tif',
+                '/some/path/image_padded.0012.tif',
+                '/some/path/image_padded.0013.tif',
+                '/some/path/image_padded.0014.tif',
+                '/some/path/image_padded.0015.tif',
+                '/some/path/image_padded.0016.tif',
+                '/some/path/image_padded.0017.tif',
+                '/some/path/image_padded.0018.tif',
+                '/some/path/image_padded.0019.tif',
+                '/some/path/image_padded.0020.tif',
+            ]
+        )
+        self.assertEqual(sequence, expected_sequence)
+
     def test_sequence_iteration(self):
         '''Loop over a sequence and get each of its items.
 
