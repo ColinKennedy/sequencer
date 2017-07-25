@@ -151,7 +151,7 @@ class ItemMethodTestCase(unittest.TestCase):
 
 class FileSequenceRepresentationTestCase(unittest.TestCase):
 
-    '''Tests where a sequence's representation type gets changed to another.'''
+    '''Test where a sequence's representation type gets changed to another.'''
 
     def test_convert_angular_to_angular(self):
         '''Change from '/some/path.<fnum>.tif' to '/some/path.<fnum>.tif'.'''
@@ -440,15 +440,15 @@ class SequenceConstructionTestCase(unittest.TestCase):
         sequence = Sequence('/asdfsa/something.####.tif')
         self.assertEqual(len(sequence), 0)
 
-    # def test_add_range_to_empty_sequence(self):
-    #     sequence = Sequence('/some/something.####.tif')
+    def test_add_range_to_empty_sequence(self):
+        sequence = Sequence('/some/something.####.tif')
 
-    #     sequence.add_in_place('/some/something.0001.tif')
-    #     sequence.add_in_place('/some/something.0002.tif')
-    #     sequence.add_in_place('/some/something.0003.tif')
+        sequence.add_in_place('/some/something.0001.tif')
+        sequence.add_in_place('/some/something.0002.tif')
+        sequence.add_in_place('/some/something.0003.tif')
 
-    #     self.assertEqual(sequence.get_start(), 1)
-    #     self.assertEqual(sequence.get_end(), 3)
+        self.assertEqual(sequence.get_start(), 1)
+        self.assertEqual(sequence.get_end(), 3)
 
     def test_create_and_mutate_empty_sequence(self):
         '''Start with an empty sequence and fill its values.'''
@@ -557,6 +557,50 @@ class SequenceConstructionTestCase(unittest.TestCase):
     #     sequence = self.sequences[0]
     #     for other_sequence in sequence[1:]:
     #         self.assertTrue(sequence == other_sequence)
+
+    def test_discontinuous_sequence_with_added_sequence(self):
+        '''Make sure a sequence can be added into a discontinuous sequence.'''
+        sequence = Sequence(
+            [
+                '/something2.0010.tif',
+                '/something2.0011.tif',
+                '/something2.0012.tif',
+                '/something2.0013.tif',
+                '/something2.0014.tif',
+                '/something2.0015.tif',
+
+                '/something2.0025.tif',
+                '/something2.0026.tif',
+            ]
+        )
+        sequence.add_in_place(
+            Sequence([
+                '/something2.0020.tif',
+                '/something2.0021.tif',
+                '/something2.0022.tif',
+                '/something2.0023.tif',
+                '/something2.0024.tif',
+            ])
+        )
+
+        expected_paths = [
+                '/something2.0010.tif',
+                '/something2.0011.tif',
+                '/something2.0012.tif',
+                '/something2.0013.tif',
+                '/something2.0014.tif',
+                '/something2.0015.tif',
+
+                '/something2.0020.tif',
+                '/something2.0021.tif',
+                '/something2.0022.tif',
+                '/something2.0023.tif',
+                '/something2.0024.tif',
+
+                '/something2.0025.tif',
+                '/something2.0026.tif',
+
+        ]
 
 
 class SequenceMethodTestCase(unittest.TestCase):
@@ -1248,6 +1292,205 @@ class SequenceMethodTestCase(unittest.TestCase):
     # def test_get_dimension_3d(self):
     #     pass
 
+    def test_set_template_for_complex_sequence(self):
+        '''Change a Sequence().template and branch the change to its items.'''
+        old_template = '/something.###.tif'
+        sequence1 = Sequence(old_template, start=10, end=15)
+        sequence2 = Sequence(old_template, start=20, end=24)
+        sequence1.add_in_place(sequence2)
+        sequence1.add_in_place(SequenceItem('/something.025.tif'))
+        sequence1.add_in_place(SequenceItem('/something.026.tif'))
+
+        new_template = '/something2.####.tif'  # Change the prefix and padding
+        sequence1.template = new_template
+
+        expected_sequence_result = Sequence(
+            [
+                '/something2.0010.tif',
+                '/something2.0011.tif',
+                '/something2.0012.tif',
+                '/something2.0013.tif',
+                '/something2.0014.tif',
+                '/something2.0015.tif',
+
+                '/something2.0025.tif',
+                '/something2.0026.tif',
+            ]
+        )
+        expected_sequence_result.add_in_place(Sequence([
+                '/something2.0020.tif',
+                '/something2.0021.tif',
+                '/something2.0022.tif',
+                '/something2.0023.tif',
+                '/something2.0024.tif',
+            ]
+        ))
+        self.assertEqual(sequence1, expected_sequence_result)
+        self.assertEqual(sequence1.template, '/something2.####.tif')
+
+    def test_set_template_for_nested_sequence(self):
+        '''Change a Sequence().template and branch the change to its items.'''
+        old_template = '/something.###.tif'
+        sequence1 = Sequence(old_template, start=10, end=12)
+        sequence1.add_in_place(SequenceItem('/something.014.tif'))
+        sequence1.add_in_place(SequenceItem('/something.015.tif'))
+
+        sequence2 = Sequence(old_template, start=20, end=22)
+        sequence3 = Sequence(old_template, start=40, end=42)
+        sequence3.add_in_place(SequenceItem('/something.027.tif'))
+        sequence3.add_in_place(SequenceItem('/something.028.tif'))
+        sequence2.add_in_place(sequence3)
+        sequence1.add_in_place(sequence2)
+
+        new_template = '/something2.####.tif'  # Change the prefix and padding
+        sequence1.template = new_template
+
+        expected_sequence_result = Sequence(
+            [
+                '/something2.0010.tif',
+                '/something2.0011.tif',
+                '/something2.0012.tif',
+
+                '/something2.0014.tif',
+                '/something2.0015.tif',
+            ]
+        )
+
+        _inner_sequence = Sequence([
+                '/something2.0020.tif',
+                '/something2.0021.tif',
+                '/something2.0022.tif',
+            ]
+        )
+
+        _nested_sequence = Sequence(
+            [
+                '/something2.0027.tif',
+                '/something2.0028.tif',
+
+                '/something2.0040.tif',
+                '/something2.0041.tif',
+                '/something2.0042.tif',
+                '/something2.0045.tif',
+            ]
+        )
+
+        _inner_sequence.add_in_place(_nested_sequence)
+
+        expected_sequence_result.add_in_place(_inner_sequence)
+        expected_sequence_result.add_in_place('/something2.0025.tif')
+        expected_sequence_result.add_in_place('/something2.0026.tif')
+
+        _nested_sequence.add_in_place(SequenceItem('/something2.0027.tif'))
+        _nested_sequence.add_in_place(SequenceItem('/something2.0028.tif'))
+        expected_sequence_result.add_in_place(_nested_sequence)
+
+        self.assertEqual(sequence1, expected_sequence_result)
+        self.assertEqual(sequence1.template, '/something2.####.tif')
+
+    def test_set_template_set_padding(self):
+        '''Change a Sequence().template's padding and branch the change.'''
+        sequence = Sequence('/something.###.tif', start=10, end=20)
+        new_template = '/something.####.tif'
+        sequence.template = new_template
+
+        expected_sequence_result = Sequence(
+            [
+                '/something.0010.tif',
+                '/something.0011.tif',
+                '/something.0012.tif',
+                '/something.0013.tif',
+                '/something.0014.tif',
+                '/something.0015.tif',
+            ]
+        )
+        self.assertEqual(sequence, expected_sequence_result)
+        self.assertEqual(sequence.template, '/something.####.tif')
+
+    def test_set_template_set_padding_padding_insensitive(self):
+        '''Error if the user tries to set padding of a glob-like template.'''
+        sequence = Sequence('/something.*.tif', start=10, end=20)
+        new_template = '/somethingz.########.tif'
+
+        with self.assertRaises(NotImplementedError):
+            sequence.template = new_template
+
+    def test_set_template_prefix(self):
+        '''Change the beginning of a template of some Sequence.'''
+        sequence = Sequence('/something.###.tif', start=10, end=20)
+        new_template = '/something2.###.tif'
+        sequence.template = new_template
+
+        expected_sequence_result = Sequence(
+            [
+                '/something2.010.tif',
+                '/something2.011.tif',
+                '/something2.012.tif',
+                '/something2.013.tif',
+                '/something2.014.tif',
+                '/something2.015.tif',
+            ]
+        )
+        self.assertEqual(sequence, expected_sequence_result)
+        self.assertEqual(sequence.template, '/something2.###.tif')
+
+    def test_set_template_prefix_and_padding(self):
+        '''Change multiple parts of a template of some Sequence.'''
+        sequence = Sequence('/something.###.tif', start=10, end=20)
+        new_template = '/something2.####.tif'
+        sequence.template = new_template
+
+        expected_sequence_result = Sequence(
+            [
+                '/something2.0010.tif',
+                '/something2.0011.tif',
+                '/something2.0012.tif',
+                '/something2.0013.tif',
+                '/something2.0014.tif',
+                '/something2.0015.tif',
+            ]
+        )
+        self.assertEqual(sequence, expected_sequence_result)
+        self.assertEqual(sequence.template, '/something2.####.tif')
+
+    def test_set_template_set_prefix_and_suffix(self):
+        '''Change every non-digit part of a Sequence().template.'''
+        sequence = Sequence('/something.###.tif', start=10, end=20)
+        new_template = '/something2.###.exr'
+        sequence.template = new_template
+
+        expected_sequence_result = Sequence(
+            [
+                '/something2.010.exr',
+                '/something2.011.exr',
+                '/something2.012.exr',
+                '/something2.013.exr',
+                '/something2.014.exr',
+                '/something2.015.exr',
+            ]
+        )
+        self.assertEqual(sequence, expected_sequence_result)
+        self.assertEqual(sequence.template, '/something2.###.exr')
+
+    def test_set_template_change_everything(self):
+        '''Change every part part of a Sequence().template.'''
+        sequence = Sequence('/something.####.tif', start=10, end=20)
+        new_template = '/something2.###.exr'
+        sequence.template = new_template
+
+        expected_sequence_result = Sequence(
+            [
+                '/something2.010.exr',
+                '/something2.011.exr',
+                '/something2.012.exr',
+                '/something2.013.exr',
+                '/something2.014.exr',
+                '/something2.015.exr',
+            ]
+        )
+        self.assertEqual(sequence, expected_sequence_result)
+        self.assertEqual(sequence.template, '/something2.###.exr')
+
 
 class SequenceObjectPrintingTestCase(unittest.TestCase):
 
@@ -1578,14 +1821,14 @@ class MakeSequenceTestCase(unittest.TestCase):
 #     def test_add_file_ignore_padding(self):
 #         raise NotImplementedError('Need to write this')
 
-    # def test_get_dimension_1d(self):
-    #     pass
+#     def test_get_dimension_1d(self):
+#         pass
 
-    # def test_get_dimension_2d(self):
-    #     pass
+#     def test_get_dimension_2d(self):
+#         pass
 
-    # def test_get_dimension_3d(self):
-    #     pass
+#     def test_get_dimension_3d(self):
+#         pass
 
 
 # class UdimSequnceSetRangeTestCase(unittest.TestCase):

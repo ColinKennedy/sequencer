@@ -341,7 +341,7 @@ class SequenceItem(object):
             Sequence: The sequence that was automatically created.
 
         '''
-        from . import sequencer
+        from . import sequencer  # Avoid a cyclic import
 
         def replace_digit_with_hash(match):
             '''str: Some varying number of '#' for match. Match must be > 0.'''
