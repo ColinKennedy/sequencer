@@ -532,6 +532,13 @@ class Sequence(collections.MutableSequence):
 
         return True
 
+    def is_continuous(self):
+        '''bool: If this object has any missing elements.'''
+        for item in self.as_range('bounds'):
+            if item not in self:
+                return False
+        return True
+
     def overlaps(self, sequence):
         '''Check if the sequence's name and range are similar to this object.
 
@@ -674,7 +681,7 @@ class Sequence(collections.MutableSequence):
         end_item = self.get_end_item(recursive=recursive)
         return self._get_range_point(end_item, mode)
 
-    def set_end(self, value):
+    def set_end(self, value, fill_gaps=False):
         '''Change the end of this object to be some value.
 
         Since the end item is a Sequence or SequenceItem, if value is not
@@ -684,9 +691,26 @@ class Sequence(collections.MutableSequence):
             value (int or str or SequenceItem or Sequence):
                 If value is an int or str, it is converted to a SequenceItem.
                 If value is a str, it must be a path that matches this instance.
+            fill_gaps (:obj:`bool`, optional):
+                If True and a new end value is set, all items between the
+                new end value and the old end value will be filled in.
+                If False, the new end value will still be set but no other
+                items will be added. Default is False.
 
         '''
+
+        end_value = self.end_item.get_value()
+
         self.__set_range_point(self.get_end_item(recursive=True), value)
+
+        new_end_value = self.end_item.get_value()
+        if fill_gaps and new_end_value != end_value:
+            for item in self._items_iterator(end_value, new_end_value):
+                # Create a brand new item
+                im = check.force_itertype(item)
+                itm = self.repr_sequence['to_format'](self.template).format(*im)
+                if itm not in self:
+                    self.add_in_place(itm)
 
     def set_padding(self, value, position=None, force=False):
         '''Change the padding on this sequence to some new value.
@@ -790,7 +814,7 @@ class Sequence(collections.MutableSequence):
         if padding is not None:
             self.set_padding(padding)
 
-    def set_start(self, value):
+    def set_start(self, value, fill_gaps=False):
         '''Change the start of this object to be some value.
 
         Since the start item is a Sequence or SequenceItem, if value is not
@@ -800,9 +824,25 @@ class Sequence(collections.MutableSequence):
             value (int or str or SequenceItem or Sequence):
                 If value is an int or str, it is converted to a SequenceItem.
                 If value is a str, it must be a path that matches this instance.
+            fill_gaps (:obj:`bool`, optional):
+                If True and a new start value is set, all items between the
+                new start value and the old start value will be filled in.
+                If False, the new start value will still be set but no other
+                items will be added. Default is False.
 
         '''
+        start_value = self.start_item.get_value()
+
         self.__set_range_point(self.start_item, value)
+
+        new_start_value = self.start_item.get_value()
+        if fill_gaps and new_start_value != start_value:
+            for item in self._items_iterator(new_start_value, start_value):
+                # Create a brand new item
+                im = check.force_itertype(item)
+                itm = self.repr_sequence['to_format'](self.template).format(*im)
+                if itm not in self:
+                    self.add_in_place(itm)
 
     def add_sequence_in_place(self, sequence):
         '''Figure out the best place to add an sequence and then add it.
@@ -898,14 +938,21 @@ class Sequence(collections.MutableSequence):
         self.start_item = min_value.item
         self.end_item = max_value.item
 
-    def fill_gaps(self):
+    def fill_gaps(self, iterator=None):
         '''Add any missing SequenceItem objects to this instance.
 
         Once this method is run, this object will be a continuous sequence.
 
+        Args:
+            iterator (iterable[Sequence or <sequence_item.SequenceItem>]):
+                The items to check for in this object.
+
         '''
         # TODO : Consider an interval tree to create sequence objects, instead
-        for item in self.as_range('bounds'):
+        if iterator is None:
+            iterator = self.as_range('bounds')
+
+        for item in iterator:
             if item not in self:
                 # No need to make copies of the item because as_range('bounds')
                 # are constructed items and are not the same as stored items

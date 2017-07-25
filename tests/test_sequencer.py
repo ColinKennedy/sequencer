@@ -808,6 +808,20 @@ class SequenceMethodTestCase(unittest.TestCase):
         )
         self.assertEqual(sequence, expected_sequence)
 
+    def test_set_start_fill_gaps(self):
+        '''Fill any gaps that occur when a new start value is explicitly set.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
+        sequence.set_start(5, fill_gaps=True)
+        self.assertTrue(sequence.is_continuous())
+
+    def test_set_end_fill_gaps(self):
+        '''Fill any gaps that occur when a new end value is explicitly set.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=10, end=20)
+        sequence.set_end(25, fill_gaps=True)
+        self.assertTrue(sequence.is_continuous())
+
     def test_sequence_iteration(self):
         '''Loop over a sequence and get each of its items.
 
