@@ -367,6 +367,14 @@ class SequenceItem(object):
         return sequencer.Sequence(formatted_path, start=start_item.get_value(),
                                   end=end_item.get_value())
 
+    def __copy__(self):
+        '''SequenceItem: A copy of the current object.'''
+        return self.__class__(path=self.path)
+
+    def __eq__(self, other):
+        '''bool: If the given object is the same path as this instance.'''
+        return other.path == self.path
+
     def __str__(self):
         '''str: The path of this object instance.'''
         return self.path

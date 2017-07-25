@@ -11,6 +11,7 @@ for a sequence is 3 consecutive items.
 # IMPORT STANDARD LIBRARIES
 import collections
 import functools
+import itertools
 import operator
 import textwrap
 import re
@@ -998,9 +999,20 @@ class Sequence(collections.MutableSequence):
 
         return item.path in [item_.path for item_ in self]
 
+    def __copy__(self):
+        '''Sequence: Make a copy of this instance and return it.'''
+        new_item = self.__class__(template=self.template)
+        for item in self.as_range('real'):
+            new_item.add_in_place(item)
+
+        return new_item
+
     def __contains__(self, other):
         '''bool: If the exact, given item is in the sequence.'''
-        return other in self.items
+        try:
+            return other in self.items
+        except AttributeError:
+            return False
 
     def __delitem__(self, index):
         '''Delete the item at the given index.
@@ -1017,8 +1029,17 @@ class Sequence(collections.MutableSequence):
         Args:
             other (Sequence): The sequence to check.
 
+        Returns:
+            bool: If the objects matches this instance.
+
         '''
-        return isinstance(other, self.__class__) and self.overlaps(other)
+        if not isinstance(other, self.__class__):
+            return False
+
+        for current_item, item in itertools.izip(self, other):
+            if current_item.path != item.path:
+                return False
+        return True
 
     def __gt__(self, other):
         '''bool: Check if the Sequence is later than the current object.'''

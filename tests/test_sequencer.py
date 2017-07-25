@@ -8,6 +8,7 @@ import tempfile
 import textwrap
 import unittest
 import shutil
+import copy
 import os
 
 # IMPORT LOCAL LIBRARIES
@@ -133,6 +134,19 @@ class ItemMethodTestCase(unittest.TestCase):
             pass  # This was expected
         else:
             self.assertTrue(False)
+
+    def test_sequence_item_equals_sequence_item(self):
+        '''Make sure that two sequence items with equal one another.'''
+        sequence_item1 = SequenceItem('/some/path.11.tif')
+        sequence_item2 = SequenceItem('/some/path.11.tif')
+
+        self.assertEqual(sequence_item1, sequence_item2)
+
+    def test_sequence_copy(self):
+        '''Test that copying a sequence creates an exact replica.'''
+        sequence_item = SequenceItem('/some/path.11.tif')
+        sequence_item_copy = copy.copy(sequence_item)
+        self.assertEqual(sequence_item, sequence_item_copy)
 
 
 class FileSequenceRepresentationTestCase(unittest.TestCase):
@@ -915,7 +929,7 @@ class SequenceMethodTestCase(unittest.TestCase):
         item2 = SequenceItem('/some/path/image_padded.0030.tif')
 
         self.assertTrue(item in sequence)
-        self.assertFalse(item2 in sequence)
+        self.assertTrue(item2 in sequence)
 
     def test_add_sequence_object_dunder_contains(self):
         '''Check that a sequence can be found in another sequence.'''
@@ -1110,6 +1124,48 @@ class SequenceMethodTestCase(unittest.TestCase):
 
         the_created_sequence = [item.path for item in sequence1]
         self.assertEqual(the_created_sequence, expected_items)
+
+    def test_sequence_equals_sequence(self):
+        '''Make sure that two sequences with equal items compare the same.'''
+        items = [
+            '/some/path/image_padded.0010.tif',
+            '/some/path/image_padded.0011.tif',
+            '/some/path/image_padded.0012.tif',
+            '/some/path/image_padded.0013.tif',
+            '/some/path/image_padded.0014.tif',
+            '/some/path/image_padded.0015.tif',
+            '/some/path/image_padded.0016.tif',
+            '/some/path/image_padded.0017.tif',
+            '/some/path/image_padded.0018.tif',
+            '/some/path/image_padded.0019.tif',
+            '/some/path/image_padded.0020.tif',
+        ]
+
+        sequence1 = Sequence(items)
+        sequence2 = Sequence(items)
+
+        self.assertEqual(sequence1, sequence2)
+
+    def test_sequence_copy(self):
+        '''Test that copying a sequence creates an exact replica.'''
+        items = [
+            '/some/path/image_padded.0010.tif',
+            '/some/path/image_padded.0011.tif',
+            '/some/path/image_padded.0012.tif',
+            '/some/path/image_padded.0013.tif',
+            '/some/path/image_padded.0014.tif',
+            '/some/path/image_padded.0015.tif',
+            '/some/path/image_padded.0016.tif',
+            '/some/path/image_padded.0017.tif',
+            '/some/path/image_padded.0018.tif',
+            '/some/path/image_padded.0019.tif',
+            '/some/path/image_padded.0020.tif',
+        ]
+
+        sequence1 = Sequence(items)
+        sequence2 = copy.copy(sequence1)
+
+        self.assertEqual(sequence1, sequence2)
 
     # # def test_set_end_from_path(self):
     # #     pass
