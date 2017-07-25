@@ -19,6 +19,7 @@ import six
 
 
 FORMAT_REGEX_STR = r'\{(?:(?:\w+)?:(?:(\d+)d)?)?\}'
+__DOLLAR_F_REGEX = r'\$F(\d+)?'
 
 
 def replace_formatted_digits(match):
@@ -34,8 +35,7 @@ def replace_formatted_digits(match):
 
 def is_dollar_f(path):
     '''bool: If the path is a Houdini-style sequence (some.$F4.tif).'''
-    dollar_f_regex = r'\$F(\d+)?'
-    return bool(re.search(dollar_f_regex, path))
+    return bool(re.search(__DOLLAR_F_REGEX, path))
 
 
 def make_dollar_f(value):
@@ -53,9 +53,8 @@ def get_items_dollar_f(path):
         return r'\d{{val}}'.format(val=digits)
 
     root_dir, path_base = os.path.split(path)
-    dollar_f_regex = r'\$F(\d+)?'
     path_comp = re.sub(
-        dollar_f_regex, replace_formatted_digits_dollar_f, path_base)
+        __DOLLAR_F_REGEX, replace_formatted_digits_dollar_f, path_base)
 
     return [os.path.join(root_dir, item) for item in os.listdir(root_dir)
             if path_comp.match(item)]
@@ -63,8 +62,7 @@ def get_items_dollar_f(path):
 
 def get_value_dollar_f(item):
     r'''int: The padding of some $F\d string.'''
-    dollar_f_regex = r'\$F(\d+)?'
-    match = re.match(dollar_f_regex, item)
+    match = re.match(__DOLLAR_F_REGEX, item)
     if match is None:
         return 0
     return int(match.group(1))
@@ -72,8 +70,7 @@ def get_value_dollar_f(item):
 
 def to_format_dollar_f(path):
     '''str: Convert a Houdini-style path to a Python-format-friendly string.'''
-    dollar_f_regex = r'\$F(\d+)?'
-    return re.sub(dollar_f_regex, replace_formatted_digits, path)
+    return re.sub(__DOLLAR_F_REGEX, replace_formatted_digits, path)
 
 
 def is_glob(path):
