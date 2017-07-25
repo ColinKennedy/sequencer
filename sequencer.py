@@ -174,7 +174,7 @@ class Sequence(collections.MutableSequence):
             non_digits = self._tokenize_sequence_path()[0]
             formatted_template = '*'.join(non_digits)
 
-            value = self.get_sequence_item(self.template)
+            value = self.get_sequence_item(self.template).get_value()
             start = (value, )
             end = (value, )
         else:
