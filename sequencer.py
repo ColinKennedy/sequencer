@@ -1052,10 +1052,6 @@ class Sequence(collections.MutableSequence):
         '''bool: Check if the Sequence is later than the current object.'''
         return self._is_left_of(other, self)
 
-    def __lt__(self, other):
-        '''bool: Check if the Sequence is earlier than the current object.'''
-        return self._is_left_of(self, other)
-
     def __getitem__(self, index):
         '''Get the sequence object stored at the given index.
 
@@ -1101,41 +1097,9 @@ class Sequence(collections.MutableSequence):
         '''
         return len(self.items)
 
-    def __repr__(self):
-        '''str: A description of how to re-create this object, for debugging.'''
-        self.INDENT += 1
-        has_sequences = False
-        reprs = []
-        for item in self.as_range('real'):
-            if isinstance(item, self.__class__):
-                has_sequences = True
-            reprs.append(repr(item))
-
-        repr_output = textwrap.dedent(
-            '''\
-            {cls_}(template={template!r},
-                items=[
-                    {items},
-                ]
-            )\
-            ''').rstrip()
-
-        for index, item in enumerate(reprs):
-            if index == 0:
-                reprs[index] = str(item)
-            else:
-                reprs[index] = textcase.indent(item, '        ' * self.INDENT)
-
-        repr_output = repr_output.format(
-            cls_=self.__class__.__name__,
-            template=self.template,
-            items=',\n'.join(reprs),
-        )
-
-        if not has_sequences:
-            self.INDENT = 0
-
-        return repr_output
+    def __lt__(self, other):
+        '''bool: Check if the Sequence is earlier than the current object.'''
+        return self._is_left_of(self, other)
 
     def __setitem__(self, index, value):
         '''Add the item to some location in a sequence.
@@ -1178,6 +1142,42 @@ class Sequence(collections.MutableSequence):
 
         return '{template} [{ranges}]'.format(template=self.template,
                                               ranges=', '.join(ranges))
+
+    def __repr__(self):
+        '''str: A description of how to re-create this object, for debugging.'''
+        self.INDENT += 1
+        has_sequences = False
+        reprs = []
+        for item in self.as_range('real'):
+            if isinstance(item, self.__class__):
+                has_sequences = True
+            reprs.append(repr(item))
+
+        repr_output = textwrap.dedent(
+            '''\
+            {cls_}(template={template!r},
+                items=[
+                    {items},
+                ]
+            )\
+            ''').rstrip()
+
+        for index, item in enumerate(reprs):
+            if index == 0:
+                reprs[index] = str(item)
+            else:
+                reprs[index] = textcase.indent(item, '        ' * self.INDENT)
+
+        repr_output = repr_output.format(
+            cls_=self.__class__.__name__,
+            template=self.template,
+            items=',\n'.join(reprs),
+        )
+
+        if not has_sequences:
+            self.INDENT = 0
+
+        return repr_output
 
 
 class SequenceMultiDimensional(Sequence):
