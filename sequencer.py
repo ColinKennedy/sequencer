@@ -1296,7 +1296,7 @@ def get_sequence_objects(file_paths, sequence_only=True, sort=sorted):
         for padding, items in path_info.items():
             if len(items) < 2:
                 if sequence_only:
-                    sequence_object = Sequence(items[0].path)
+                    sequence_object = Sequence([items[0].path])
                 else:
                     sequence_object = sequencer_item.SequenceItem(path)
             else:
