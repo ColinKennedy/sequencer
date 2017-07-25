@@ -690,6 +690,26 @@ class SequenceMethodTestCase(unittest.TestCase):
         sequence.add_in_place(item)
         self.assertTrue(item in sequence)
 
+    def test_add_sequence_item_copy(self):
+        '''Make sure that items added to sequences are added as copies.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence = Sequence(hash_repr, start=0, end=7)
+
+        item = SequenceItem('/some/path/image_padded.0008.tif')
+        sequence.add_in_place(item)
+
+        self.assertFalse(sequence.items[8] is item)
+
+    def test_add_sequence_copy(self):
+        '''Make sure that sequences added to sequences are added as copies.'''
+        hash_repr = '/some/path/image_padded.####.tif'
+        sequence1 = Sequence(hash_repr, start=0, end=7)
+        sequence2 = Sequence(hash_repr, start=10, end=15)
+
+        sequence1.add_in_place(sequence2)
+
+        self.assertFalse(sequence1.items[-1] is sequence2)
+
     # TODO : Write this test
     # def test_add_sequence_item_object_already_exists(self):
     #     raise NotImplementedError('Need to write this test')

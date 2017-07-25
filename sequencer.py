@@ -14,6 +14,7 @@ import functools
 import itertools
 import operator
 import textwrap
+import copy
 import re
 
 # IMPORT THIRD-PARTY LIBRARIES
@@ -877,9 +878,15 @@ class Sequence(collections.MutableSequence):
             item (SequenceItem or Sequence): The item to add to this object.
 
         '''
-        # TODO : Add warning to this method
-        item = self._conform_to_sequence_object(item)
-        self.items.insert(position, item)
+        item_ = self._conform_to_sequence_object(item)
+        if type(item_) == type(item):
+            # If no change was made, make copy of the item
+            # We do this so that mutating SequenceItems will not affect other
+            # sequences by accident
+            #
+            item_ = copy.copy(item)
+
+        self.items.insert(position, item_)
 
         self._recalculate_range()
 
@@ -1003,7 +1010,7 @@ class Sequence(collections.MutableSequence):
         '''Sequence: Make a copy of this instance and return it.'''
         new_item = self.__class__(template=self.template)
         for item in self.as_range('real'):
-            new_item.add_in_place(item)
+            new_item.add_in_place(copy.copy(item))
 
         return new_item
 
