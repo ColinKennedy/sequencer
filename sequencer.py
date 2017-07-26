@@ -187,8 +187,8 @@ class Sequence(collections.MutableSequence):
             formatted_template = self.repr_sequence['to_format'](self.template)
 
             if is_empty_sequence:
-                # Create some bogus values for start and end so that we can get away
-                # with not actually having any know start/end bounds
+                # Create some bogus values for start and end so that we can
+                # get away with not actually having to know start/end bounds
                 #
                 dimensions = conversion.get_dimensions(formatted_template)
                 start = tuple(0 for item in range(dimensions))
@@ -210,6 +210,7 @@ class Sequence(collections.MutableSequence):
 
     @property
     def template(self):
+        '''str: The stored template on this instance.'''
         return self._template
 
     @template.setter
@@ -239,12 +240,8 @@ class Sequence(collections.MutableSequence):
         Raises:
             ValueError: If value is empty, fail early to keep the object from
                         being set into an un-recoverable state.
-            TypeError: Padding-insensitive types, like glob,
-                       cannot have its padding set.
-            NotImplementedError:
-                Right now, you can't change the sequence type.
-                Example: Sequence('/path.####.tif').template = '/path.%04d.tif'
-                is not supported yet.
+            ValueError: If the user attempted to change the type of the sequence
+                        but no implementation could be found.
 
         '''
         if self._template == '':
@@ -260,13 +257,24 @@ class Sequence(collections.MutableSequence):
         # Figure out what padding values have changed, if any
         # Example: If the user changed /some/path.####.tif to /some/path.###.tif
         #
-        old_non_digit_items, old_digit_items = self._tokenize_sequence_path()
-        current_padding = self.get_padding()
+        _, old_digit_items = self._tokenize_sequence_path()
         new_non_digit_items, new_digit_items = \
             self._tokenize_sequence_path(value)
 
         if not new_digit_items:
-            raise NotImplementedError('You cannot set the repr_sequence type, yet')
+            for repr_type, repr_info in conversion.REPR_SEQUENCES.items():
+                new_non_digit_items, new_digit_items = self._tokenize_sequence_path(value, repr_info['to_format'])
+                if new_digit_items:
+                    break
+            else:
+                raise ValueError('Value: "{val}" has no supported '
+                                 'implementation.'.format(val=value))
+
+            force = repr_info['padding_case'] == 'insensitive'
+            # TODO : This will not work with multi-dimensional padding types.
+            #        Consider refactoring.
+            #
+            self.set_type(repr_type, padding=len(new_digit_items[0]), force=force)
 
         padding_new_values = []
         padding_indexes = []
@@ -276,12 +284,8 @@ class Sequence(collections.MutableSequence):
                 padding_new_values.append(new_padding_value)
                 padding_indexes.append(index)
 
-        if padding_new_values and padding_indexes:
-            if self.repr_sequence['padding_case'] == 'insensitive':
-                raise TypeError(
-                    'Sequence: "{seq!r}" cannot have its padding set. It is '
-                    'to a padding-insensitive mode.'.format(seq=self))
-
+        if padding_new_values and padding_indexes \
+                and self.repr_sequence['padding_case'] != 'insensitive':
             self.set_padding(value=padding_new_values, position=padding_indexes)
 
         # Figure out what non-padding values have changed, if any
@@ -292,7 +296,7 @@ class Sequence(collections.MutableSequence):
                 # Gather the parts of the paths that are not digits
                 non_digits, digits = item.get_parts(as_type=str)
                 non_digits_ = []
-                for old_non_digit_item, new_non_digit_item in itertools.izip(non_digits, new_non_digit_items):
+                for _, new_non_digit_item in itertools.izip(non_digits, new_non_digit_items):
                     non_digits_.append(new_non_digit_item)
 
                 item.path = ''.join(make_alternating_list(non_digits_, digits))
@@ -489,18 +493,22 @@ class Sequence(collections.MutableSequence):
             if item is not None:
                 return item
 
-    def _tokenize_sequence_path(self, path=''):
+    def _tokenize_sequence_path(self, path='', format_function=None):
         '''tuple[list[str], list[str]]: The non-digit and digit parts.'''
         if path == '':
             path = self.template
+
+        if format_function is None:
+            format_function = self.repr_sequence['to_format']
+
         # /some/path.####.tif -> /some/path.{:04d}.tif
-        formatted_string = self.repr_sequence['to_format'](path)
+        formatted_string = format_function(path)
         # Remove any inner key info (like 04d) which would cause our next
         # format to fail
         #
         # /some/path.{:04d}.tif -> /some/path.{}.tif
         #
-        formatted_string = re.sub('\{[^\{\}]+\}', '{}', formatted_string)
+        formatted_string = re.sub(r'\{[^\{\}]+\}', '{}', formatted_string)
 
         # /some/path.{}.tif -> ['/some/path.', '.tif']
         non_digit_items = formatted_string.split('{}')
@@ -804,7 +812,6 @@ class Sequence(collections.MutableSequence):
                 items will be added. Default is False.
 
         '''
-
         end_value = self.end_item.get_value()
 
         self.__set_range_point(self.get_end_item(recursive=True), value)
@@ -868,7 +875,7 @@ class Sequence(collections.MutableSequence):
         new_template = make_alternating_list(non_digit_items, digit_items)
         self._template = ''.join(new_template)
 
-    def set_type(self, as_type, padding=None):
+    def set_type(self, as_type, padding=None, force=False):
         '''Change the type of this sequence to the given type.
 
         Args:
@@ -880,6 +887,9 @@ class Sequence(collections.MutableSequence):
                 to one that is padding-sensitive, you must padding to change
                 over to. Otherwise, padding is completely optional and just
                 functions like set_padding().
+            force (:obj:`bool`, optional):
+                Whether to force the padding of the new type or not.
+                Default is False.
 
         '''
         repr_sequence = conversion.REPR_SEQUENCES[as_type]
@@ -921,7 +931,7 @@ class Sequence(collections.MutableSequence):
         self.repr_sequence = repr_sequence
 
         if padding is not None:
-            self.set_padding(padding)
+            self.set_padding(padding, force=force)
 
     def set_start(self, value, fill_gaps=False):
         '''Change the start of this object to be some value.
@@ -1029,11 +1039,12 @@ class Sequence(collections.MutableSequence):
         '''
         item_ = self._conform_to_sequence_object(item)
         if type(item_) == type(item):
-            # If no change was made, make copy of the item
+            # If no change was made, make deepcopy of the item to avoid
+            # the same item being added to any other sequence
             # We do this so that mutating SequenceItems will not affect other
             # sequences by accident
             #
-            item_ = copy.copy(item)
+            item_ = copy.deepcopy(item)
 
         self.items.insert(position, item_)
 
@@ -1150,11 +1161,11 @@ class Sequence(collections.MutableSequence):
                 for item_ in mode_functions[mode](item):
                     yield function(item_)
 
-    def __copy__(self):
-        '''Sequence: Make a copy of this instance and return it.'''
+    def __deepcopy__(self, memo):
+        '''Sequence: Make a deepcopy of this instance and return it.'''
         new_item = self.__class__(template=self.template)
         for item in self.as_range('real'):
-            new_item.add_in_place(copy.copy(item))
+            new_item.add_in_place(copy.deepcopy(item))
 
         return new_item
 
@@ -1451,7 +1462,6 @@ def get_sequence_objects(file_paths, sequence_only=True, sort=sorted):
         paths = [sequencer_item.SequenceItem(path) for path in paths]
         hash_path = conversion.to_hash_from_format(sequence_format_path)
         sequence_collector.setdefault(hash_path, dict())
-        sequence = None
         for path in paths:
             padding = path.get_padding()
             try:
@@ -1550,11 +1560,9 @@ def make_alternating_list(list1, list2):
         list: A list of alternated elements.
 
     '''
-    # TODO : remove this import
-    import itertools
     return [element for element in list(itertools.chain.from_iterable(
-                [val for val in itertools.izip_longest(list1, list2)]))
-            if element != None]
+            [val for val in itertools.izip_longest(list1, list2)]))
+            if element is not None]
 
 
 def split_using_subitems(base, subitems, include_subitems=False):
@@ -1600,4 +1608,3 @@ def split_using_subitems(base, subitems, include_subitems=False):
 
 if __name__ == '__main__':
     print(__doc__)
-

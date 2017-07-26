@@ -367,8 +367,8 @@ class SequenceItem(object):
         return sequencer.Sequence(formatted_path, start=start_item.get_value(),
                                   end=end_item.get_value())
 
-    def __copy__(self):
-        '''SequenceItem: A copy of the current object.'''
+    def __deepcopy__(self, memo):
+        '''SequenceItem: A deepcopy of the current object.'''
         return self.__class__(path=self.path)
 
     def __eq__(self, other):
@@ -420,4 +420,3 @@ def make_value_position_iterable(value, position, dimensions):
 
 if __name__ == '__main__':
     print(__doc__)
-

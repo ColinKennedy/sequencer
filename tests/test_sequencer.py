@@ -345,6 +345,209 @@ class FileSequenceRepresentationTestCase(unittest.TestCase):
 
         self.assertEqual(sequence.template, hash_repr)
 
+    def test_convert_template_angular_to_glob(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/some/path.<fnum>.tif', start=10, end=20)
+        sequence.template = '/some/path.*.tif'
+
+        self.assertEqual(sequence.repr_sequence['type'], 'glob')
+
+    def test_convert_template_angular_to_percent(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/some/path.<fnum>.tif', start=10, end=20)
+        new_template = '/some/path.%04d.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'percent')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_angular_to_hash(self):
+        '''Change from '/some/path.<fnum>.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/some/path.<fnum>.tif', start=10, end=20)
+        new_template = '/some/path.####.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'hash')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_dollar_f_to_angular(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.<f>.tif'.'''
+        sequence = Sequence('/some/path.$F4.tif', start=10, end=20)
+        new_template = '/some/path.<fnum>.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'delimiter-<>')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_dollar_f_to_glob(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.*.tif'.'''
+        sequence = Sequence('/some/path.$F3.tif', start=10, end=20)
+        new_template = '/some/path.*.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'glob')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_dollar_f_to_percent(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.%03d.tif'.'''
+        sequence = Sequence('/some/path.$F3.tif', start=10, end=20)
+        new_template = '/some/path.%03d.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'percent')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_dollar_f_to_hash(self):
+        '''Change from 'some_image,$F3.tif' to 'some_image.###.tif'.'''
+        sequence = Sequence('/some/path.$F3.tif', start=10, end=20)
+        new_template = '/some/path.####.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'hash')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_glob_to_angular(self):
+        '''Change from '/some/path.*.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/some/path.*.tif', start=10, end=20)
+        new_template = '/some/path.<fnum>.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'delimiter-<>')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_glob_to_dollar_f(self):
+        '''Change from 'some_image.*.tif' to 'some_image.$F4.tif'.'''
+        sequence = Sequence('/some/path.*.tif', start=10, end=20)
+        new_template = '/some/path.$F4.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'dollar_f')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_glob_to_glob(self):
+        '''Change from '/some/path.*.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/some/path.*.tif', start=10, end=20)
+        new_template = '/some/path.*.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'glob')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_glob_to_percent(self):
+        '''Change from '/some/path.*.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/some/path.*.tif', start=10, end=20)
+        new_template = '/some/path.%04d.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'percent')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_glob_to_hash(self):
+        '''Change from '/some/path.*.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/some/path.*.tif', start=10, end=20)
+        sequence.template = '/some/path.####.tif'
+
+        self.assertEqual(sequence.repr_sequence['type'], 'hash')
+
+    def test_convert_template_percent_to_angular(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/some/path.%04d.tif', start=10, end=20)
+        new_template = '/some/path.<fnum>.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'delimiter-<>')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_percent_to_dollar_f(self):
+        '''Change from 'some_image,%04d.tif' to 'some_image.$F4.tif'.'''
+        sequence = Sequence('/some/path.%04d.tif', start=10, end=20)
+        new_template = '/some/path.$F4.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'dollar_f')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_percent_to_glob(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/some/path.%04d.tif', start=10, end=20)
+        new_template = '/some/path.*.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'glob')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_percent_to_percent(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/some/path.%04d.tif', start=10, end=20)
+        new_template = '/some/path.%04d.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'percent')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_percent_to_hash(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/some/path.%04d.tif', start=10, end=20)
+        new_template = '/some/path.####.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'hash')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_hash_to_angular(self):
+        '''Change from '/some/path.%04d.tif' to '/some/path.<fnum>.tif'.'''
+        sequence = Sequence('/some/path.%04d.tif', start=10, end=20)
+        new_template = '/some/path.<fnum>.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'delimiter-<>')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_hash_to_dollar_f(self):
+        '''Change from 'some_image,####.tif' to 'some_image.$F4.tif'.'''
+        sequence = Sequence('/some/path.####.tif', start=10, end=20)
+        new_template = '/some/path.$F4.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'dollar_f')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_hash_to_glob(self):
+        '''Change from '/some/path.####.tif' to '/some/path.*.tif'.'''
+        sequence = Sequence('/some/path.####.tif', start=10, end=20)
+        new_template = '/some/path.*.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'glob')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_hash_to_percent(self):
+        '''Change from '/some/path.####.tif' to '/some/path.%04d.tif'.'''
+        sequence = Sequence('/some/path.####.tif', start=10, end=20)
+        new_template = '/some/path.%04d.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'percent')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_hash_to_percent_0001(self):
+        '''Change from '/some/path.####.tif' to '/some/path.%03d.tif'.'''
+        sequence = Sequence('/some/path.####.tif', start=10, end=20)
+        new_template = '/some/path.%04d.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'percent')
+        self.assertEqual(sequence.template, new_template)
+
+    def test_convert_template_hash_to_hash(self):
+        '''Change from '/some/path.####.tif' to '/some/path.####.tif'.'''
+        sequence = Sequence('/some/path.####.tif', start=10, end=20)
+        new_template = '/some/path.####.tif'
+        sequence.template = new_template
+
+        self.assertEqual(sequence.repr_sequence['type'], 'hash')
+        self.assertEqual(sequence.template, new_template)
+
 
 class SequenceConstructionTestCase(unittest.TestCase):
 
@@ -1408,12 +1611,27 @@ class SequenceMethodTestCase(unittest.TestCase):
         self.assertEqual(sequence.template, '/something.####.tif')
 
     def test_set_template_set_padding_padding_insensitive(self):
-        '''Error if the user tries to set padding of a glob-like template.'''
+        '''Change from a padding-insensitive sequence to padding-sensitive.'''
         sequence = Sequence('/something.*.tif', start=10, end=20)
         new_template = '/somethingz.########.tif'
 
-        with self.assertRaises(NotImplementedError):
-            sequence.template = new_template
+        sequence.template = new_template
+        self.assertEqual(sequence.template, new_template)
+        new_values = [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+        ]
+        self.assertEqual([item.get_value() for item in sequence], new_values)
+        self.assertEqual(sequence.repr_sequence['type'], 'hash')
 
     def test_set_template_prefix(self):
         '''Change the beginning of a template of some Sequence.'''
